@@ -92,7 +92,28 @@ Split_train_test <- function(df_count, df_pheno, split = 0.8, seed = 123){
 }
 
 
-#Splitted_df <- Split_train_test(df, df_pheno)
+
+
+
+#' @description
+#' PPLasso pipeline
+#' @param df_count_train df of raw counts with genes on cols and samples on rows
+#' @param df_pheno_train df of clinical observations for each sample of df_count. It
+#' should have a column named 'patient.vital_status' containing dependent variables info
+#' @param df_count_test df of raw counts with genes on cols and samples on rows
+#' @param df_pheno_test df of clinical observations for each sample of df_count. It
+#' should have a column named 'patient.vital_status' containing dependent variables info
+#' @returns PPLasso pipeline results on test set
+pplasso <- function(df_norm_train, df_pheno_matched_train, df_norm_test, df_pheno_matched_test){
+  
+  library(PPLasso)
+  
+}
+
+
+
+
+
 
 
 
