@@ -38,9 +38,7 @@ DeSeq_Norm <- function(df_count, df_pheno){
   # match df_count and df_pheno
   m <- match(colnames(df_count), rownames(df_pheno))
   df_pheno_matched <- df_pheno[m, ]
-  
-  print(rownames(df_pheno_matched) == colnames(df_count))
-  
+
   library(DESeq2)
   
   # Build DDS matrix for DeSeq
@@ -59,29 +57,85 @@ DeSeq_Norm <- function(df_count, df_pheno){
 
 
 
-
-
-#' Main function used to simulate the benchmark
-#'
+#' @description
+#' Function that given a df_count of input split it into Train and Test
 #' 
-#'
 #' @param df_count df of raw counts with genes on cols and samples on rows
 #' @param df_pheno df of clinical observations for each sample of df_count. It
 #' should have a column named 'patient.vital_status' containing dependent variables info
-#' @returns df_count with genes on cols and samples on rows normalized with DeSeq2 
-#' and the ordered matched df_pheno
-featSel_Bench <- function(df, df_pheno, split = 0.7){
+#' @returns df_count_train with genes on cols and samples on rows and the ordered matched df_pheno_train
+#' @returns df_count_test with genes on cols and samples on rows and the ordered matched df_pheno_test
+Split_train_test <- function(df_count, df_pheno, split = 0.8, seed = 123){
   
-  DeSeq_Norm_list <- DeSeq_Norm(df, df_pheno)
-  df_norm <- DeSeq_Norm_list[[1]]
-  df_desc <- DeSeq_Norm_list[[2]]
+  library(caret)
+  library(dplyr)
+  
+  # match df_count and df_pheno
+  m <- match(rownames(df_count), rownames(df_pheno))
+  df_pheno <- df_pheno[m, ]
+  
+  # Create data partition on df_pheno outcome to create a balanced split
+  set.seed(seed)
+  train_samples <- df_pheno$patient.vital_status %>%
+    createDataPartition(p = split, list = FALSE)
+  print(train_samples)
+
+  df_count_train <- df_count[train_samples, ] 
+  df_pheno_train <- df_pheno[train_samples, ]
+  
+  df_count_test <- df_count[-train_samples, ]
+  df_pheno_test <- df_pheno[-train_samples, ]
+  
+  print(head(df_count_train))
+  print(head(df_count_test))
+  print(head(df_pheno_train))
+  print(head(df_pheno_test))
+  
+  return(list(df_count_train, df_pheno_train, 
+              df_count_test, df_pheno_test))
+  
+}
+
+
+#Splitted_df <- Split_train_test(df, df_pheno)
+
+
+
+
+
+#' @description
+#' Main function used to simulate the benchmark
+#' @param df df of raw counts with genes on cols and samples on rows
+#' @param df_pheno df of clinical observations for each sample of df_count. It
+#' should have a column named 'patient.vital_status' containing dependent variables info
+#' @returns pipeline results
+featSel_Bench <- function(df, df_pheno){
+  
+  # Split df into train and test
+  Splitted_df <- Split_train_test(df, df_pheno)
+  df_count_train <- Splitted_df[[1]]
+  df_pheno_train <- Splitted_df[[2]]
+  df_count_test <- Splitted_df[[3]]
+  df_pheno_test <- Splitted_df[[4]]
+  
+  ## Apply Normalization on Train and Test independently
+  # Train Normalization
+  DeSeq_Norm_list_tr <- DeSeq_Norm(df_count_train, df_pheno_train)
+  df_norm_train <- DeSeq_Norm_list_tr[[1]]
+  df_pheno_matched_train <- DeSeq_Norm_list_tr[[2]]
+  # Test Normalization
+  DeSeq_Norm_list_tst <- DeSeq_Norm(df_count_test, df_pheno_test)
+  df_norm_test <- DeSeq_Norm_list_tst[[1]]
+  df_pheno_matched_test <- DeSeq_Norm_list_tst[[2]]
+  
+  return(list(df_norm_train, df_pheno_matched_train, df_norm_test, df_pheno_matched_test))
   
 }
 
 
 
 
-
+a <- featSel_Bench(df, df_pheno)
 
 
 
