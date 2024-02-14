@@ -78,18 +78,13 @@ Split_train_test <- function(df_count, df_pheno, split = 0.8, seed = 123){
   set.seed(seed)
   train_samples <- df_pheno$patient.vital_status %>%
     createDataPartition(p = split, list = FALSE)
-  print(train_samples)
+  #print(train_samples)
 
   df_count_train <- df_count[train_samples, ] 
   df_pheno_train <- df_pheno[train_samples, ]
   
   df_count_test <- df_count[-train_samples, ]
   df_pheno_test <- df_pheno[-train_samples, ]
-  
-  print(head(df_count_train))
-  print(head(df_count_test))
-  print(head(df_pheno_train))
-  print(head(df_pheno_test))
   
   return(list(df_count_train, df_pheno_train, 
               df_count_test, df_pheno_test))
@@ -111,6 +106,8 @@ Split_train_test <- function(df_count, df_pheno, split = 0.8, seed = 123){
 #' @returns pipeline results
 featSel_Bench <- function(df, df_pheno){
   
+  print("############################################")
+  print("Started splitting df into train and test ...")
   # Split df into train and test
   Splitted_df <- Split_train_test(df, df_pheno)
   df_count_train <- Splitted_df[[1]]
@@ -118,15 +115,20 @@ featSel_Bench <- function(df, df_pheno){
   df_count_test <- Splitted_df[[3]]
   df_pheno_test <- Splitted_df[[4]]
   
+  print("Starting Normalization with DeSeq2")
+  
   ## Apply Normalization on Train and Test independently
   # Train Normalization
   DeSeq_Norm_list_tr <- DeSeq_Norm(df_count_train, df_pheno_train)
-  df_norm_train <- DeSeq_Norm_list_tr[[1]]
+  df_norm_train <- as.data.frame(DeSeq_Norm_list_tr[[1]])
   df_pheno_matched_train <- DeSeq_Norm_list_tr[[2]]
   # Test Normalization
   DeSeq_Norm_list_tst <- DeSeq_Norm(df_count_test, df_pheno_test)
-  df_norm_test <- DeSeq_Norm_list_tst[[1]]
+  df_norm_test <- as.data.frame(DeSeq_Norm_list_tst[[1]])
   df_pheno_matched_test <- DeSeq_Norm_list_tst[[2]]
+  
+  print("Finished successfully")
+  print("############################################")
   
   return(list(df_norm_train, df_pheno_matched_train, df_norm_test, df_pheno_matched_test))
   
