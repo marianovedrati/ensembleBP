@@ -6,8 +6,6 @@
 ## in modo da compararne le metriche al variare delle dimensioni dei df in input
 
 
-## SIMO MI VEDI???
-
 # Import first df
 df <- read.csv2("../Data/ACC_Adrenocortical_Carcinoma/ACC_Count.csv", row.names = 1)
 df_pheno <- read.csv2("../Data/ACC_Adrenocortical_Carcinoma/ACC_Pheno.csv", row.names = 1)
@@ -96,28 +94,43 @@ Split_train_test <- function(df_count, df_pheno, split = 0.8, seed = 123){
 
 
 #' @description
-#' PPLasso pipeline
+#' WLogit pipeline
 #' @param df_count_train df of raw counts with genes on cols and samples on rows
 #' @param df_pheno_train df of clinical observations for each sample of df_count. It
 #' should have a column named 'patient.vital_status' containing dependent variables info
 #' @param df_count_test df of raw counts with genes on cols and samples on rows
 #' @param df_pheno_test df of clinical observations for each sample of df_count. It
 #' should have a column named 'patient.vital_status' containing dependent variables info
-#' @returns PPLasso pipeline results on test set
-pplasso <- function(df_norm_train, df_pheno_matched_train, df_norm_test, df_pheno_matched_test){
+#' @returns WLogit pipeline results on test set
+wLogit <- function(df_norm_train, df_pheno_matched_train, df_norm_test, df_pheno_matched_test){
   
-  library(PPLasso)
+  library(WLogit)
+  
+  df_norm_train <- as.matrix(df_norm_train)
+  df_norm_test <- as.matrix(df_norm_test)
+  
+  print("... Estimating coefficients ...")
+  
+  # Compute coefficients that minimize loglikelihood
+  mod <- WhiteningLogit(X = df_norm_train, y = df_pheno_matched_train$patient.vital_status)
+  beta_min <- mod$beta.min
+  
+  print("... Making predictions ...")
+  
+  # Predict Test samples
+  y_pred <- round(CalculPx(df_norm_test, beta_min))
+  acc_table <- table(df_pheno_matched_test$patient.vital_status, y_pred)
+  
+  return(acc_table)
   
 }
 
 
 
 
-
-
-
-
-
+################################################################################
+################################# MAIN #########################################
+################################################################################
 
 #' @description
 #' Main function used to simulate the benchmark
@@ -136,7 +149,7 @@ featSel_Bench <- function(df, df_pheno){
   df_count_test <- Splitted_df[[3]]
   df_pheno_test <- Splitted_df[[4]]
   
-  print("Starting Normalization with DeSeq2")
+  print("Starting Normalization with DeSeq2 ...")
   
   ## Apply Normalization on Train and Test independently
   # Train Normalization
@@ -148,17 +161,26 @@ featSel_Bench <- function(df, df_pheno){
   df_norm_test <- as.data.frame(DeSeq_Norm_list_tst[[1]])
   df_pheno_matched_test <- DeSeq_Norm_list_tst[[2]]
   
+  print("... Normalization correctly computed!")
+  print("Running WLogit pipeline ...")
+  
+  # Run WLogit pipeline (don't run --> too slow!!)
+  WL <- 1
+  #WL <- wLogit(df_norm_train, df_pheno_matched_train, df_norm_test, df_pheno_matched_test)
+  
   print("Finished successfully")
   print("############################################")
   
-  return(list(df_norm_train, df_pheno_matched_train, df_norm_test, df_pheno_matched_test))
+  return(list(df_norm_train, df_pheno_matched_train, df_norm_test, df_pheno_matched_test, WL))
   
 }
 
+################################################################################
+################################################################################
+################################################################################
 
 
-
-a <- featSel_Bench(df, df_pheno)
+main_return <- featSel_Bench(df, df_pheno)
 
 
 
