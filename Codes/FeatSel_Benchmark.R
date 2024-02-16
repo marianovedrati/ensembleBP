@@ -24,32 +24,58 @@ df_pheno$patient.vital_status <- ifelse(df_pheno$patient.vital_status == "alive"
 #' Normalize raw count dataframe using DeSeq2 and order clinical dataframe
 #'
 #' DeSeq_Norm returns the count df normalized and its matched clinical dataframe
+#' for both train and test data normalized independently
 #'
-#' @param df_count df of raw counts with genes on cols and samples on rows
+#' @param df_count_train df of raw counts with genes on cols and samples on rows
 #' @param df_pheno df of clinical observations for each sample of df_count. It
 #' should have a column named 'patient.vital_status' containing dependent variables info
 #' @returns df_count with genes on cols and samples on rows normalized with DeSeq2 
-#' and the ordered matched df_pheno
-DeSeq_Norm <- function(df_count, df_pheno){
+#' and the ordered matched df_pheno. A pair for the train set and a pair for the test set
+DeSeq_Norm <- function(df_count_train, df_pheno_train, df_count_test, df_pheno_test){
   
+  ## Train
   # Rotate df_count
-  df_count <- as.data.frame(t(df_count))
+  df_count_train <- as.data.frame(t(df_count_train))
   # match df_count and df_pheno
-  m <- match(colnames(df_count), rownames(df_pheno))
-  df_pheno_matched <- df_pheno[m, ]
+  m <- match(colnames(df_count_train), rownames(df_pheno_train))
+  df_pheno_matched_train <- df_pheno_train[m, ]
+  
+  ## Test
+  # Rotate df_count
+  df_count_test <- as.data.frame(t(df_count_test))
+  # match df_count and df_pheno
+  n <- match(colnames(df_count_test), rownames(df_pheno_test))
+  df_pheno_matched_test <- df_pheno_test[n, ]
 
   library(DESeq2)
   
+  ## Train
+  print("... Starting Train Normalization ...")
   # Build DDS matrix for DeSeq
-  dds <- DESeqDataSetFromMatrix(countData = df_count, 
-                                colData = df_pheno_matched, 
-                                design =~patient.vital_status)
+  ddsTrain <- DESeqDataSetFromMatrix(countData = df_count_train, 
+                                    colData = df_pheno_matched_train, 
+                                    design =~patient.vital_status)
+  # Filter (?)
+  keep <- rowSums(counts(ddsTrain)>10) > 10
+  ddsTrain <- ddsTrain[keep, ]
   # Apply DeSeq to DDS matrix
-  dds <- DESeq(dds)
+  ddsTrain <- DESeq(ddsTrain)
   # Compute Normalized Count Data
-  norm_df <- t(as.data.frame(assay(vst(dds))))
+  norm_df_train <- t(assay(varianceStabilizingTransformation(ddsTrain, blind = F)))
   
-  return(list(norm_df, df_pheno_matched))
+  ## Test
+  print("... Starting Test Normalization ...")
+  ddsTest <- DESeqDataSetFromMatrix(countData = df_count_test, 
+                                    colData = df_pheno_matched_test, 
+                                    design = ~patient.vital_status)
+  # Apply filter computed on Train set
+  ddsTest <- ddsTest[keep, ]
+  ddsTest <- DESeq(ddsTest)
+  dispersionFunction(ddsTest) <- dispersionFunction(ddsTrain)
+  norm_df_test <- t(assay(varianceStabilizingTransformation(ddsTest, blind = F)))
+ 
+  return(list(norm_df_train, df_pheno_matched_train,
+              norm_df_test, df_pheno_matched_test))
   
 }
 
@@ -105,7 +131,10 @@ Split_train_test <- function(df_count, df_pheno, split = 0.8, seed = 123){
 #' @returns WLogit pipeline results on test set
 wLogit <- function(df_norm_train, df_pheno_matched_train, df_norm_test, df_pheno_matched_test){
   
+  set.seed(123)
   library(WLogit)
+  df_norm_train <- df_norm_train[,c(1000:1500)] # just to check if its working!
+  df_norm_test <- df_norm_test[, c(1:1500)]
   
   df_norm_train <- as.matrix(df_norm_train)
   df_norm_test <- as.matrix(df_norm_test)
@@ -122,7 +151,7 @@ wLogit <- function(df_norm_train, df_pheno_matched_train, df_norm_test, df_pheno
   y_pred <- round(CalculPx(df_norm_test, beta_min))
   acc_table <- table(df_pheno_matched_test$patient.vital_status, y_pred)
   
-  return(acc_table)
+  return(CalculPx(df_norm_test, beta_min))
   
 }
 
@@ -153,21 +182,18 @@ featSel_Bench <- function(df, df_pheno){
   print("Starting Normalization with DeSeq2 ...")
   
   ## Apply Normalization on Train and Test independently
-  # Train Normalization
-  DeSeq_Norm_list_tr <- DeSeq_Norm(df_count_train, df_pheno_train)
-  df_norm_train <- as.data.frame(DeSeq_Norm_list_tr[[1]])
-  df_pheno_matched_train <- DeSeq_Norm_list_tr[[2]]
-  # Test Normalization
-  DeSeq_Norm_list_tst <- DeSeq_Norm(df_count_test, df_pheno_test)
-  df_norm_test <- as.data.frame(DeSeq_Norm_list_tst[[1]])
-  df_pheno_matched_test <- DeSeq_Norm_list_tst[[2]]
+  DeSeq_Norm_list <- DeSeq_Norm(df_count_train, df_pheno_train, df_count_test, df_pheno_test)
+  df_norm_train <- as.data.frame(DeSeq_Norm_list[[1]])
+  df_pheno_matched_train <- as.data.frame(DeSeq_Norm_list[[2]])
+  df_norm_test <- as.data.frame(DeSeq_Norm_list[[3]])
+  df_pheno_matched_test <- as.data.frame(DeSeq_Norm_list[[4]])
   
   print("... Normalization correctly computed!")
   print("Running WLogit pipeline ...")
   
   # Run WLogit pipeline (don't run --> too slow!!)
-  WL <- 1
-  #WL <- wLogit(df_norm_train, df_pheno_matched_train, df_norm_test, df_pheno_matched_test)
+  #WL <- 1
+  WL <- wLogit(df_norm_train, df_pheno_matched_train, df_norm_test, df_pheno_matched_test)
   
   print("Finished successfully")
   print("############################################")
