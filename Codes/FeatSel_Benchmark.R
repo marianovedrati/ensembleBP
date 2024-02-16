@@ -217,6 +217,52 @@ main_return <- featSel_Bench(df, df_pheno)
 
 
 
+#############
+#OmicSelector
+
+#scarico la bellissima versione modificata del pacchetto
+library("devtools")
+install_github("Sim1L/OmicSelector", force = T)
+library(OmicSelector)
+
+#creo la funzione per lanciarlo
+run_OmicSelector<-function(danex=NULL, #tabella counts
+                           metadane=NULL, #tabella desc, deve contenere una colonna Class
+                           filtr_minimalcounts = 100, filtr_howmany = 1/3, # tenuti geni con almeno filtr_minimalcounts in almeno in una percentuale di campioni pari a filtr_howmany
+                           train_proc = 0.6,#percentuale di campioni nel train
+                           wd= getwd(),
+                           m=c(1:28,33:36,41:46)){#The m parameter defines what methods will be tested.
+  #i metodi dal 62 al 70 non esistono?
+  #i metodi 29:23, 47:48 hanno bisogno di un pacchetto che non trovo
+  #il metodo 37:40 l'ho tolto perchè è troppo lento genetic algorithms
+  #dal 47 in poi mi sono rotto le scatole
+  #il codice della funzione OmicSelector_OmicSelector ha le spiegazioni di tutti i metodi (credo)
+  if(length(danex==NULL)==0 | length(metadane==NULL)==0){
+    stop("Devi mette tabella counts e tabella descrittiva, duro!!")
+  }
+  #Importa i dati come counts e con edger li converte in log10TPM
+  ttpm = OmicSelector_counts_to_log10tpm(danex, metadane, ids = metadane$sample, filtr = T, 
+                                         filtr_minimalcounts = filtr_minimalcounts, filtr_howmany = filtr_howmany)  # We will leave only the miRNAs which apeared with at least 100 counts in 1/3 of cases.
+  #genera Train, Test e Validation set che vengono salvati nella Working directory come csv
+  mixed = OmicSelector_prepare_split(metadane = metadane, ttpm = ttpm, train_proc = train_proc)
+  mixed = fread("mixed.csv")
+  
+  #partendo dai csv salvati fa le sue cose misteriose e salva tutti i risultati in una lista che dovrai interpretare te
+  selected_features = OmicSelector_OmicSelector(wd = wd, m = m) 
+  return(selected_features)
+  
+}
+
+prova<-run_OmicSelector(danex=danex, metadane = metadane) #con le tabelle counts e desc del tutorial funziona (spero)
+
+
+
+
+
+
+
+
+
 
 
 
