@@ -133,8 +133,8 @@ wLogit <- function(df_norm_train, df_pheno_matched_train, df_norm_test, df_pheno
   
   set.seed(123)
   library(WLogit)
-  df_norm_train <- df_norm_train[,c(1000:1500)] # just to check if its working!
-  df_norm_test <- df_norm_test[, c(1:1500)]
+  df_norm_train <- df_norm_train[,c(1000:1200)] # just to check if its working!
+  df_norm_test <- df_norm_test[, c(1000:1200)]
   
   df_norm_train <- as.matrix(df_norm_train)
   df_norm_test <- as.matrix(df_norm_test)
@@ -151,7 +151,7 @@ wLogit <- function(df_norm_train, df_pheno_matched_train, df_norm_test, df_pheno
   y_pred <- round(CalculPx(df_norm_test, beta_min))
   acc_table <- table(df_pheno_matched_test$patient.vital_status, y_pred)
   
-  return(CalculPx(df_norm_test, beta_min))
+  return(acc_table)
   
 }
 
