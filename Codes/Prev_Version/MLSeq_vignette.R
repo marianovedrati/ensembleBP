@@ -86,7 +86,7 @@ show(fit.svm)
 trained(fit.svm)
 
 ## ----eval = FALSE-------------------------------------------------------------
-#  plot(fit.svm)
+plot(fit.svm)
 
 ## ----fitted_model_svm_figure, echo = FALSE, results='hide'--------------------
 cairo_pdf(filename = "fitted_model_svm_figure.pdf", height = 5.5)
