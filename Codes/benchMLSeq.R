@@ -107,7 +107,6 @@ svm.based <- function(data.trainS4, data.testS4, classts,
                           preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
                           control = svmControl)
   
-  print(selectedGenes(fit.svmPoly))
   #Predicted class labels
   pred.svmPoly <- predict(fit.svmPoly, data.testS4)
   pred.svmPoly <- relevel(pred.svmPoly, ref = "D")
@@ -203,6 +202,138 @@ voom.based <- function(data.trainS4, data.testS4, classts,
 
 
 
+#' @description Tests several linear-based classifiers
+#' @param data.trainS4
+#' @param data.testS4
+#' @param classts
+#' @param tL tune Length
+#' @param n number of CV
+#' @param r number of repeats for CV
+#' @returns A list of Confusion Matrices one for each linear-based method
+linear.based <- function(data.trainS4, data.testS4, classts, 
+                          tL = 2, n = 5, r = 2){
+  
+  # Define control function for all voom.based classifiers
+  linearControl <- discreteControl(method = "repeatedcv", number = n, repeats = r,
+                                   tuneLength = tL)
+  
+  print("Fitting PLDA")
+  set.seed(1510)
+  # PLDA
+  fit.PLDA <- classify(data = data.trainS4, method = "PLDA",
+                       normalize = "deseq", ref = "D",
+                       control = linearControl)
+  
+  #Predicted class labels
+  pred.PLDA <- predict(fit.PLDA, data.testS4)
+  pred.PLDA <- relevel(pred.PLDA, ref = "D")
+  actual <- relevel(classts$condition, ref = "D")
+  
+  tblPLDA <- table(Predicted = pred.PLDA, Actual = actual)
+  PLDA.cm <- confusionMatrix(tblPLDA, positive = "D")
+  
+  print("Fitting PLDA2")
+  set.seed(1510)
+  # PLDA2
+  fit.PLDA2 <- classify(data = data.trainS4, method = "PLDA2",
+                        normalize = "deseq", ref = "D",
+                        control = linearControl)
+  
+  #Predicted class labels
+  pred.PLDA2 <- predict(fit.PLDA2, data.testS4)
+  pred.PLDA2 <- relevel(pred.PLDA2, ref = "D")
+  
+  tblPLDA2 <- table(Predicted = pred.PLDA2, Actual = actual)
+  PLDA2.cm <- confusionMatrix(tblPLDA2, positive = "D")
+  
+  print("Fitting NBLDA")
+  set.seed(1510)
+  # NBLDA
+  fit.NBLDA <- classify(data = data.trainS4, method = "NBLDA",
+                        normalize = "deseq", ref = "D",
+                        control = linearControl)
+  
+  #Predicted class labels
+  pred.NBLDA <- predict(fit.NBLDA, data.testS4)
+  pred.NBLDA <- relevel(pred.NBLDA, ref = "D")
+  
+  tblNBLDA <- table(Predicted = pred.NBLDA, Actual = actual)
+  NBLDA.cm <- confusionMatrix(tblNBLDA, positive = "D")
+  
+  print("Successfully accomplished linear-based methods")
+  
+  return(list(PLDA.cm, PLDA2.cm, NBLDA.cm))
+  
+}
+
+
+
+#' @description Tests several sparse-based classifiers
+#' @param data.trainS4
+#' @param data.testS4
+#' @param classts
+#' @param tL tune Length
+#' @param n number of CV
+#' @param r number of repeats for CV
+#' @returns A list of Confusion Matrices one for each sparse-based method
+sparse.based <- function(data.trainS4, data.testS4, classts, 
+                         tL = 2, n = 5, r = 2){
+  
+  # Define control function for all sparse.based classifiers
+  sparseControl <- trainControl(method = "repeatedcv", number = n,
+                                repeats = r, classProbs = TRUE)
+  
+  print("Fitting SDWD")
+  set.seed(1510)
+  # Sparse Distance Weighted Discrimination
+  fit.sdwd <- classify(data = data.trainS4, method = "sdwd",
+                            preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
+                            control = sparseControl)
+  
+  #Predicted class labels
+  pred.sdwd <- predict(fit.sdwd, data.testS4)
+  pred.sdwd <- relevel(pred.sdwd, ref = "D")
+  actual <- relevel(classts$condition, ref = "D")
+  
+  tblsdwd <- table(Predicted = pred.sdwd, Actual = actual)
+  sdwd.cm <- confusionMatrix(tblsdwd, positive = "D")
+  
+  print("Fitting sparseLDA")
+  set.seed(1510)
+  # Sparse linear discriminant analysis
+  fit.sparseLDA <- classify(data = data.trainS4, method = "sparseLDA",
+                          preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
+                          control = sparseControl)
+  
+  #Predicted class labels
+  pred.sparseLDA <- predict(fit.sparseLDA, data.testS4)
+  pred.sparseLDA <- relevel(pred.sparseLDA, ref = "D")
+  
+  tblsparseLDA <- table(Predicted = pred.sparseLDA, Actual = actual)
+  sparseLDA.cm <- confusionMatrix(tblsparseLDA, positive = "D")
+  
+  print("Fitting SPLS")
+  set.seed(1510)
+  # Sparse partial least squares
+  fit.spls <- classify(data = data.trainS4, method = "spls",
+                            preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
+                            control = sparseControl)
+  
+  #Predicted class labels
+  pred.spls <- predict(fit.spls, data.testS4)
+  pred.spls <- relevel(pred.spls, ref = "D")
+  
+  tblspls <- table(Predicted = pred.spls, Actual = actual)
+  spls.cm <- confusionMatrix(tblspls, positive = "D")
+  
+  print("Successfully accomplished sparse-based methods")
+  
+  return(list(sdwd.cm, sparseLDA.cm, spls.cm))
+  
+}
+
+
+
 
 dfsImport <- dfs.import()
 df <- dfsImport[[1]]
@@ -215,8 +346,8 @@ classts <- tts[[3]]
 
 svm <- svm.based(data.trainS4, data.testS4, classts)
 voom <- voom.based(data.trainS4, data.testS4, classts)
-
-
+lin <- linear.based(data.trainS4, data.testS4, classts)
+sparse <- sparse.based(data.trainS4, data.testS4, classts)
 
 
 
