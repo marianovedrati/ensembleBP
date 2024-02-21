@@ -1,5 +1,7 @@
 setwd("/Users/giorgiomontesi/Desktop/Universita_di_Siena/A_PhD_Project/Biomarker_Prediction/ensembleBP/Codes")
 
+options(expressions = 5e5)
+
 library(MLSeq)
 library(DESeq2)
 library(edgeR)
@@ -277,7 +279,10 @@ linear.based <- function(data.trainS4, data.testS4, classts,
 #' @param r number of repeats for CV
 #' @returns A list of Confusion Matrices one for each sparse-based method
 sparse.based <- function(data.trainS4, data.testS4, classts, 
-                         tL = 2, n = 5, r = 2){
+                         tL = 2, n = 2, r = 2){
+  
+  library(sdwd)
+  library(sparseLDA)
   
   # Define control function for all sparse.based classifiers
   sparseControl <- trainControl(method = "repeatedcv", number = n,
@@ -334,9 +339,171 @@ sparse.based <- function(data.trainS4, data.testS4, classts,
 
 
 
+#' @description Tests several NNet-based classifiers
+#' @param data.trainS4
+#' @param data.testS4
+#' @param classts
+#' @param tL tune Length
+#' @param n number of CV
+#' @param r number of repeats for CV
+#' @returns A list of Confusion Matrices one for each NNet-based method
+nnet.based <- function(data.trainS4, data.testS4, classts, 
+                         tL = 2, n = 2, r = 2){
+  
+  # Define control function for all NNet.based classifiers
+  nnetControl <- trainControl(method = "repeatedcv", number = n,
+                                repeats = r, classProbs = TRUE)
+  
+  print("Fitting nnet")
+  # set.seed(1510)
+  # # Sparse Distance Weighted Discrimination
+  # fit.nnet <- classify(data = data.trainS4, method = "nnet",
+  #                      preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
+  #                      control = nnetControl)
+  # 
+  # #Predicted class labels
+  # pred.nnet <- predict(fit.nnet, data.testS4)
+  # pred.nnet <- relevel(pred.nnet, ref = "D")
+  actual <- relevel(classts$condition, ref = "D")
+
+  # tblnnet <- table(Predicted = pred.nnet, Actual = actual)
+  # nnet.cm <- confusionMatrix(tblnnet, positive = "D")
+  nnet.cm=1
+  
+  print("Fitting mlp")
+  set.seed(1510)
+  # Sparse linear discriminant analysis
+  fit.mlp <- classify(data = data.trainS4, method = "mlp",
+                            preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
+                            control = nnetControl)
+  
+  #Predicted class labels
+  pred.mlp <- predict(fit.mlp, data.testS4)
+  pred.mlp <- relevel(pred.mlp, ref = "D")
+  
+  tblmlp <- table(Predicted = pred.mlp, Actual = actual)
+  mlp.cm <- confusionMatrix(tblmlp, positive = "D")
+  
+  print("Fitting mlpML")
+  set.seed(1510)
+  # Sparse partial least squares
+  fit.mlpML <- classify(data = data.trainS4, method = "mlpML",
+                       preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
+                       control = nnetControl)
+  
+  #Predicted class labels
+  pred.mlpML <- predict(fit.mlpML, data.testS4)
+  pred.mlpML <- relevel(pred.mlpML, ref = "D")
+  
+  tblmlpML <- table(Predicted = pred.mlpML, Actual = actual)
+  mlpML.cm <- confusionMatrix(tblmlpML, positive = "D")
+  
+  # print("Fitting avNNet")
+  # set.seed(1510)
+  # # Sparse partial least squares
+  # fit.avNNet <- classify(data = data.trainS4, method = "avNNet",
+  #                       preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
+  #                       control = nnetControl)
+  # 
+  # #Predicted class labels
+  # pred.avNNet <- predict(fit.avNNet, data.testS4)
+  # pred.avNNet <- relevel(pred.avNNet, ref = "D")
+  # 
+  # tblavNNet <- table(Predicted = pred.avNNet, Actual = actual)
+  # avNNet.cm <- confusionMatrix(tblavNNet, positive = "D")
+  avNNet.cm = 1
+  
+  print("Successfully accomplished NNet-based methods")
+  
+  return(list(nnet.cm, mlp.cm, mlpML.cm, avNNet.cm))
+  
+}
+
+
+#' @description Tests several tree-based classifiers
+#' @param data.trainS4
+#' @param data.testS4
+#' @param classts
+#' @param tL tune Length
+#' @param n number of CV
+#' @param r number of repeats for CV
+#' @returns A list of Confusion Matrices one for each tree-based method
+tree.based <- function(data.trainS4, data.testS4, classts, 
+                       tL = 2, n = 2, r = 2){
+  
+  # Define control function for all NNet.based classifiers
+  treeControl <- trainControl(method = "repeatedcv", number = n,
+                              repeats = r, classProbs = TRUE)
+  
+  print("Fitting rpart")
+  set.seed(1510)
+  # Sparse Distance Weighted Discrimination
+  fit.rpart <- classify(data = data.trainS4, method = "rpart",
+                       preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
+                       control = treeControl)
+
+  #Predicted class labels
+  pred.rpart <- predict(fit.rpart, data.testS4)
+  pred.rpart <- relevel(pred.rpart, ref = "D")
+  actual <- relevel(classts$condition, ref = "D")
+
+  tblrpart <- table(Predicted = pred.rpart, Actual = actual)
+  rpart.cm <- confusionMatrix(tblrpart, positive = "D")
+  
+  print("Fitting cforest")
+  set.seed(1510)
+  # Sparse linear discriminant analysis
+  fit.cforest <- classify(data = data.trainS4, method = "cforest",
+                      preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
+                      control = treeControl)
+  
+  #Predicted class labels
+  pred.cforest <- predict(fit.cforest, data.testS4)
+  pred.cforest <- relevel(pred.cforest, ref = "D")
+  
+  tblcforest <- table(Predicted = pred.cforest, Actual = actual)
+  cforest.cm <- confusionMatrix(tblcforest, positive = "D")
+  
+  print("Fitting ctree")
+  set.seed(1510)
+  # Sparse partial least squares
+  fit.ctree <- classify(data = data.trainS4, method = "ctree",
+                        preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
+                        control = treeControl)
+  
+  #Predicted class labels
+  pred.ctree <- predict(fit.ctree, data.testS4)
+  pred.ctree <- relevel(pred.ctree, ref = "D")
+  
+  tblctree <- table(Predicted = pred.ctree, Actual = actual)
+  ctree.cm <- confusionMatrix(tblctree, positive = "D")
+  
+  print("Fitting rf")
+  set.seed(1510)
+  # Sparse partial least squares
+  fit.rf <- classify(data = data.trainS4, method = "rf",
+                        preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
+                        control = treeControl)
+
+  #Predicted class labels
+  pred.rf <- predict(fit.rf, data.testS4)
+  pred.rf <- relevel(pred.rf, ref = "D")
+
+  tblrf <- table(Predicted = pred.rf, Actual = actual)
+  rf.cm <- confusionMatrix(tblrf, positive = "D")
+  
+  print("Successfully accomplished tree-based methods")
+  
+  return(list(rpart.cm, cforest.cm, ctree.cm, rf.cm))
+  
+}
+
+
+
 
 dfsImport <- dfs.import()
 df <- dfsImport[[1]]
+# df <- df[1:1000, ]
 class <- dfsImport[[2]]
 
 tts <- trainTest.split(df, class)
@@ -347,9 +514,9 @@ classts <- tts[[3]]
 svm <- svm.based(data.trainS4, data.testS4, classts)
 voom <- voom.based(data.trainS4, data.testS4, classts)
 lin <- linear.based(data.trainS4, data.testS4, classts)
-sparse <- sparse.based(data.trainS4, data.testS4, classts)
-
-
+# sparse <- sparse.based(data.trainS4, data.testS4, classts) # <-- too slow!!
+net <- nnet.based(data.trainS4, data.testS4, classts)
+tree <- tree.based(data.trainS4, data.testS4, classts)
 
 
 
