@@ -283,6 +283,7 @@ sparse.based <- function(data.trainS4, data.testS4, classts,
   
   library(sdwd)
   library(sparseLDA)
+  library(spls)
   
   # Define control function for all sparse.based classifiers
   sparseControl <- trainControl(method = "repeatedcv", number = n,
@@ -501,9 +502,82 @@ tree.based <- function(data.trainS4, data.testS4, classts,
 
 
 
+#' @description Tests several bagging-based classifiers
+#' @param data.trainS4
+#' @param data.testS4
+#' @param classts
+#' @param tL tune Length
+#' @param n number of CV
+#' @param r number of repeats for CV
+#' @returns A list of Confusion Matrices one for each bagging-based method
+bagg.based <- function(data.trainS4, data.testS4, classts, 
+                         tL = 2, n = 2, r = 2){
+  
+  library(adabag)
+  
+  # Define control function for all bagg.based classifiers
+  baggControl <- trainControl(method = "repeatedcv", number = n,
+                                repeats = r, classProbs = TRUE)
+  
+  print("Fitting AdaBag")
+  set.seed(1510)
+  # Sparse Distance Weighted Discrimination
+  fit.AdaBag <- classify(data = data.trainS4, method = "AdaBag",
+                       preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
+                       control = baggControl)
+  
+  #Predicted class labels
+  pred.AdaBag <- predict(fit.AdaBag, data.testS4)
+  pred.AdaBag <- relevel(pred.AdaBag, ref = "D")
+  actual <- relevel(classts$condition, ref = "D")
+  
+  tblAdaBag <- table(Predicted = pred.AdaBag, Actual = actual)
+  AdaBag.cm <- confusionMatrix(tblAdaBag, positive = "D")
+  
+  print("Fitting treebag")
+  set.seed(1510)
+  # Sparse linear discriminant analysis
+  fit.treebag <- classify(data = data.trainS4, method = "treebag",
+                            preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
+                            control = baggControl)
+  
+  #Predicted class labels
+  pred.treebag <- predict(fit.treebag, data.testS4)
+  pred.treebag <- relevel(pred.treebag, ref = "D")
+  
+  tbltreebag <- table(Predicted = pred.treebag, Actual = actual)
+  treebag.cm <- confusionMatrix(tbltreebag, positive = "D")
+  
+  print("Fitting bagFDA")
+  set.seed(1510)
+  # Sparse partial least squares
+  fit.bagFDA <- classify(data = data.trainS4, method = "bagFDA",
+                       preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
+                       control = baggControl)
+  
+  #Predicted class labels
+  pred.bagFDA <- predict(fit.bagFDA, data.testS4)
+  pred.bagFDA <- relevel(pred.bagFDA, ref = "D")
+  
+  tblbagFDA <- table(Predicted = pred.bagFDA, Actual = actual)
+  bagFDA.cm <- confusionMatrix(tblbagFDA, positive = "D")
+  
+  print("Successfully accomplished bagging-based methods")
+  
+  return(list(AdaBag.cm, treebag.cm, bagFDA.cm))
+  
+}
+
+
+
+
+
+
+
+
 dfsImport <- dfs.import()
 df <- dfsImport[[1]]
-# df <- df[1:1000, ]
+df <- df[1:1000, ]
 class <- dfsImport[[2]]
 
 tts <- trainTest.split(df, class)
@@ -514,9 +588,9 @@ classts <- tts[[3]]
 svm <- svm.based(data.trainS4, data.testS4, classts)
 voom <- voom.based(data.trainS4, data.testS4, classts)
 lin <- linear.based(data.trainS4, data.testS4, classts)
-# sparse <- sparse.based(data.trainS4, data.testS4, classts) # <-- too slow!!
+sparse <- sparse.based(data.trainS4, data.testS4, classts) # <-- too slow!!
 net <- nnet.based(data.trainS4, data.testS4, classts)
 tree <- tree.based(data.trainS4, data.testS4, classts)
-
+bag <- bagg.based(data.trainS4, data.testS4, classts)
 
 
