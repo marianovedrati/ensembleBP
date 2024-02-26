@@ -50,6 +50,7 @@ dfs.import <- function(pathdf = "../Data/ACC_Adrenocortical_Carcinoma/ACC_Count.
 trainTest.split <- function(df, class, ratio = 0.3){
 
   set.seed(2128)
+  
   data <- df
   nTest <- ceiling(ncol(data) * ratio)
   ind <- sample(ncol(data), nTest, FALSE)
@@ -514,6 +515,7 @@ bagg.based <- function(data.trainS4, data.testS4, classts,
                          tL = 2, n = 2, r = 2){
   
   library(adabag)
+  library(earth)
   
   # Define control function for all bagg.based classifiers
   baggControl <- trainControl(method = "repeatedcv", number = n,
@@ -570,6 +572,138 @@ bagg.based <- function(data.trainS4, data.testS4, classts,
 
 
 
+#' @description Tests several boost-based classifiers
+#' @param data.trainS4
+#' @param data.testS4
+#' @param classts
+#' @param tL tune Length
+#' @param n number of CV
+#' @param r number of repeats for CV
+#' @returns A list of Confusion Matrices one for each boost-based method
+boost.based <- function(data.trainS4, data.testS4, classts, 
+                       tL = 2, n = 2, r = 2){
+  
+  # Define control function for all boost.based classifiers
+  boostControl <- trainControl(method = "repeatedcv", number = n,
+                              repeats = r, classProbs = TRUE)
+  
+  print("Fitting gamboost")
+  set.seed(1510)
+  # Sparse Distance Weighted Discrimination
+  fit.gamboost <- classify(data = data.trainS4, method = "gamboost",
+                         preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
+                         control = boostControl)
+  
+  #Predicted class labels
+  pred.gamboost <- predict(fit.gamboost, data.testS4)
+  pred.gamboost <- relevel(pred.gamboost, ref = "D")
+  actual <- relevel(classts$condition, ref = "D")
+  
+  tblgamboost <- table(Predicted = pred.gamboost, Actual = actual)
+  gamboost.cm <- confusionMatrix(tblgamboost, positive = "D")
+  
+  print("Fitting bstSm")
+  set.seed(1510)
+  # Sparse linear discriminant analysis
+  fit.bstSm <- classify(data = data.trainS4, method = "bstSm",
+                          preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
+                          control = boostControl)
+  
+  #Predicted class labels
+  pred.bstSm <- predict(fit.bstSm, data.testS4)
+  pred.bstSm <- relevel(pred.bstSm, ref = "D")
+  
+  tblbstSm <- table(Predicted = pred.bstSm, Actual = actual)
+  bstSm.cm <- confusionMatrix(tblbstSm, positive = "D")
+  
+  print("Fitting bstTree")
+  set.seed(1510)
+  # Sparse partial least squares
+  fit.bstTree <- classify(data = data.trainS4, method = "bstTree",
+                         preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
+                         control = boostControl)
+  
+  #Predicted class labels
+  pred.bstTree <- predict(fit.bstTree, data.testS4)
+  pred.bstTree <- relevel(pred.bstTree, ref = "D")
+  
+  tblbstTree <- table(Predicted = pred.bstTree, Actual = actual)
+  bstTree.cm <- confusionMatrix(tblbstTree, positive = "D")
+  
+  print("Successfully accomplished boost-based methods")
+  
+  return(list(gamboost.cm, bstSm.cm, bstTree.cm))
+  
+}
+
+
+
+
+#' @description Tests several pls-based classifiers
+#' @param data.trainS4
+#' @param data.testS4
+#' @param classts
+#' @param tL tune Length
+#' @param n number of CV
+#' @param r number of repeats for CV
+#' @returns A list of Confusion Matrices one for each pls-based method
+pls.based <- function(data.trainS4, data.testS4, classts, 
+                         tL = 2, n = 2, r = 2){
+  
+  library(gpls)
+  
+  # Define control function for all sparse.based classifiers
+  plsControl <- trainControl(method = "repeatedcv", number = n,
+                                repeats = r, classProbs = TRUE)
+  
+  print("Fitting gpls")
+  set.seed(1510)
+  # generalized partial least squares
+  fit.gpls <- classify(data = data.trainS4, method = "gpls",
+                       preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
+                       control = plsControl)
+  
+  #Predicted class labels
+  pred.gpls <- predict(fit.gpls, data.testS4)
+  pred.gpls <- relevel(pred.gpls, ref = "D")
+  actual <- relevel(classts$condition, ref = "D")
+  
+  tblgpls <- table(Predicted = pred.gpls, Actual = actual)
+  gpls.cm <- confusionMatrix(tblgpls, positive = "D")
+  
+  print("Fitting pls")
+  set.seed(1510)
+  # partial least squares
+  fit.pls <- classify(data = data.trainS4, method = "pls",
+                            preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
+                            control = plsControl)
+  
+  #Predicted class labels
+  pred.pls <- predict(fit.pls, data.testS4)
+  pred.pls <- relevel(pred.pls, ref = "D")
+  
+  tblpls <- table(Predicted = pred.pls, Actual = actual)
+  pls.cm <- confusionMatrix(tblpls, positive = "D")
+  
+  print("Fitting SPLS")
+  set.seed(1510)
+  # Sparse partial least squares
+  fit.spls <- classify(data = data.trainS4, method = "spls",
+                       preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
+                       control = plsControl)
+  
+  #Predicted class labels
+  pred.spls <- predict(fit.spls, data.testS4)
+  pred.spls <- relevel(pred.spls, ref = "D")
+  
+  tblspls <- table(Predicted = pred.spls, Actual = actual)
+  spls.cm <- confusionMatrix(tblspls, positive = "D")
+  
+  print("Successfully accomplished pls-based methods")
+  
+  return(list(gpls.cm, pls.cm, spls.cm))
+  
+}
 
 
 
@@ -577,8 +711,11 @@ bagg.based <- function(data.trainS4, data.testS4, classts,
 
 dfsImport <- dfs.import()
 df <- dfsImport[[1]]
-df <- df[1:1000, ]
+#df <- df[1:1500, ]
 class <- dfsImport[[2]]
+
+keep <- rowSums(df > 25) > round(ncol(df)/3)
+df <- df[keep, ]
 
 tts <- trainTest.split(df, class)
 data.trainS4 <- tts[[1]]
@@ -588,9 +725,9 @@ classts <- tts[[3]]
 svm <- svm.based(data.trainS4, data.testS4, classts)
 voom <- voom.based(data.trainS4, data.testS4, classts)
 lin <- linear.based(data.trainS4, data.testS4, classts)
-sparse <- sparse.based(data.trainS4, data.testS4, classts) # <-- too slow!!
+#sparse <- sparse.based(data.trainS4, data.testS4, classts) # <-- too slow!!
 net <- nnet.based(data.trainS4, data.testS4, classts)
 tree <- tree.based(data.trainS4, data.testS4, classts)
 bag <- bagg.based(data.trainS4, data.testS4, classts)
-
-
+bst <- boost.based(data.trainS4, data.testS4, classts)
+pls <- pls.based(data.trainS4, data.testS4, classts)
