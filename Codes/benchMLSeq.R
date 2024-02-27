@@ -8,6 +8,9 @@ library(edgeR)
 library(VennDiagram)
 library(pamr)
 library(caret)
+library(devtools)
+#install_github("enriquea/feseR", force = T)
+library(feseR)
 
 
 #' @description Import dfCount and dfPheno given their paths
@@ -40,14 +43,18 @@ dfs.import <- function(pathdf = "../Data/ACC_Adrenocortical_Carcinoma/ACC_Count.
 }
 
 
+
+
+
 #' @description Split dfCount and Class into train and test according split ratio
 #' @param df dfCount as preprocessed from dfs.import
 #' @param class S4 dfPheno matched and preprocessed as from dfs.import
 #' @param ratio split ratio of test set
+#' @param mincorr correlation threshold for soft filter
 #' @returns data.trainS4
 #' @returns data.testS4
 #' @returns classts: real test labels
-trainTest.split <- function(df, class, ratio = 0.3){
+trainTest.split <- function(df, class, ratio = 0.3, mincorr = 0.1){
 
   set.seed(2128)
   
@@ -61,8 +68,17 @@ trainTest.split <- function(df, class, ratio = 0.3){
   data.test <- as.matrix(data[ ,ind] + 1)
   classtr <- DataFrame(condition = class[-ind, ])
   classts <- DataFrame(condition = class[ind, ])
-
-
+  
+  # Apply very basic correlation filter to train df
+  classtr.num <- c(1,0)[classtr$condition]
+  dtr <- filter.corr(scale(t(data.train), center = T, scale = T), 
+                     classtr.num, mincorr = mincorr)
+  dtr <- (t(dtr))
+  data.train <- data.train[rownames(data.train) %in% rownames(dtr), ]
+  # Apply results to test dataset
+  data.test <- data.test[rownames(data.test) %in% rownames(data.train), ]
+  
+  # Define S4 objects
   data.trainS4 = DESeqDataSetFromMatrix(countData = data.train, colData = classtr,
                                         design = formula(~condition))
   data.testS4 = DESeqDataSetFromMatrix(countData = data.test, colData = classts,
@@ -714,13 +730,15 @@ df <- dfsImport[[1]]
 #df <- df[1:1500, ]
 class <- dfsImport[[2]]
 
-keep <- rowSums(df > 25) > round(ncol(df)/3)
+keep <- rowSums(df > 10) > round(ncol(df)/3)
 df <- df[keep, ]
 
-tts <- trainTest.split(df, class)
+tts <- trainTest.split(df, class, mincorr = 0.1)
 data.trainS4 <- tts[[1]]
 data.testS4 <- tts[[2]]
 classts <- tts[[3]]
+# mini-check per vedere se i geni filtati sono gli stessi
+sum(rownames(assay(data.trainS4)) == rownames(assay(data.testS4)))
 
 svm <- svm.based(data.trainS4, data.testS4, classts)
 voom <- voom.based(data.trainS4, data.testS4, classts)
