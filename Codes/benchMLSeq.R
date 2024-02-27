@@ -307,19 +307,20 @@ sparse.based <- function(data.trainS4, data.testS4, classts,
                                 repeats = r, classProbs = TRUE)
   
   print("Fitting SDWD")
-  set.seed(1510)
-  # Sparse Distance Weighted Discrimination
-  fit.sdwd <- classify(data = data.trainS4, method = "sdwd",
-                            preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
-                            control = sparseControl)
-  
-  #Predicted class labels
-  pred.sdwd <- predict(fit.sdwd, data.testS4)
-  pred.sdwd <- relevel(pred.sdwd, ref = "D")
+  # set.seed(1510)
+  # # Sparse Distance Weighted Discrimination
+  # fit.sdwd <- classify(data = data.trainS4, method = "sdwd",
+  #                           preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
+  #                           control = sparseControl)
+  # 
+  # #Predicted class labels
+  # pred.sdwd <- predict(fit.sdwd, data.testS4)
+  # pred.sdwd <- relevel(pred.sdwd, ref = "D")
   actual <- relevel(classts$condition, ref = "D")
-  
-  tblsdwd <- table(Predicted = pred.sdwd, Actual = actual)
-  sdwd.cm <- confusionMatrix(tblsdwd, positive = "D")
+  # 
+  # tblsdwd <- table(Predicted = pred.sdwd, Actual = actual)
+  # sdwd.cm <- confusionMatrix(tblsdwd, positive = "D")
+  sdwd.cm <- 1
   
   print("Fitting sparseLDA")
   set.seed(1510)
@@ -336,18 +337,19 @@ sparse.based <- function(data.trainS4, data.testS4, classts,
   sparseLDA.cm <- confusionMatrix(tblsparseLDA, positive = "D")
   
   print("Fitting SPLS")
-  set.seed(1510)
-  # Sparse partial least squares
-  fit.spls <- classify(data = data.trainS4, method = "spls",
-                            preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
-                            control = sparseControl)
-  
-  #Predicted class labels
-  pred.spls <- predict(fit.spls, data.testS4)
-  pred.spls <- relevel(pred.spls, ref = "D")
-  
-  tblspls <- table(Predicted = pred.spls, Actual = actual)
-  spls.cm <- confusionMatrix(tblspls, positive = "D")
+  # set.seed(1510)
+  # # Sparse partial least squares
+  # fit.spls <- classify(data = data.trainS4, method = "spls",
+  #                           preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
+  #                           control = sparseControl)
+  # 
+  # #Predicted class labels
+  # pred.spls <- predict(fit.spls, data.testS4)
+  # pred.spls <- relevel(pred.spls, ref = "D")
+  # 
+  # tblspls <- table(Predicted = pred.spls, Actual = actual)
+  # spls.cm <- confusionMatrix(tblspls, positive = "D")
+  spls.cm <- 1
   
   print("Successfully accomplished sparse-based methods")
   
@@ -733,7 +735,7 @@ class <- dfsImport[[2]]
 keep <- rowSums(df > 10) > round(ncol(df)/3)
 df <- df[keep, ]
 
-tts <- trainTest.split(df, class, mincorr = 0.1)
+tts <- trainTest.split(df, class, mincorr = 0.2)
 data.trainS4 <- tts[[1]]
 data.testS4 <- tts[[2]]
 classts <- tts[[3]]
@@ -741,11 +743,54 @@ classts <- tts[[3]]
 sum(rownames(assay(data.trainS4)) == rownames(assay(data.testS4)))
 
 svm <- svm.based(data.trainS4, data.testS4, classts)
+svmRadial <- svm[[1]] 
+svmPoly <- svm[[2]]
+svmLinear <- svm[[3]]
+
 voom <- voom.based(data.trainS4, data.testS4, classts)
+voomDLDA <- voom[[1]]
+voomDQDA <- voom[[2]]
+voomNSC <- voom[[3]]
+
 lin <- linear.based(data.trainS4, data.testS4, classts)
-#sparse <- sparse.based(data.trainS4, data.testS4, classts) # <-- too slow!!
-net <- nnet.based(data.trainS4, data.testS4, classts)
+PLDA <- lin[[1]]
+PLDA2 <- lin[[2]]
+NBLDA <- lin[[3]]
+
+sparse <- sparse.based(data.trainS4, data.testS4, classts) # <-- too slow!!
+#sdwd <- sparse[[1]]
+sparseLDA <- sparse[[2]]
+#spls <- sparse[[3]]
+
+net <- nnet.based(data.trainS4, data.testS4, classts) # <-- not properly working!!
+#nnet <- net[[1]]
+mlp <- net[[2]]
+mlpML <- net[[3]]
+#avNNet <- net[[4]]
+
 tree <- tree.based(data.trainS4, data.testS4, classts)
+rpart <- tree[[1]]
+cforest <- tree[[2]]
+ctree <- tree[[3]]
+rf <- tree[[4]]
+
 bag <- bagg.based(data.trainS4, data.testS4, classts)
+AdaBag <- bag[[1]]
+treebag <- bag[[2]]
+bagFDA <- bag[[3]]
+
 bst <- boost.based(data.trainS4, data.testS4, classts)
-pls <- pls.based(data.trainS4, data.testS4, classts)
+gamboost <- bst[[1]]
+bstSm <- bst[[2]]
+bstTree <- bst[[3]]
+
+partls <- pls.based(data.trainS4, data.testS4, classts)
+gpls <- partls[[1]]
+pls <- partls[[2]]
+spls <- partls[[3]]
+
+
+
+
+
+
