@@ -54,9 +54,9 @@ dfs.import <- function(pathdf = "../Data/ACC_Adrenocortical_Carcinoma/ACC_Count.
 #' @returns data.trainS4
 #' @returns data.testS4
 #' @returns classts: real test labels
-trainTest.split <- function(df, class, ratio = 0.3, mincorr = 0.1){
+trainTest.split <- function(df, class, ratio = 0.3, mincorr = 0.1, seed = 123){
 
-  set.seed(2128)
+  set.seed(seed)
   
   data <- df
   nTest <- ceiling(ncol(data) * ratio)
@@ -735,62 +735,102 @@ class <- dfsImport[[2]]
 keep <- rowSums(df > 10) > round(ncol(df)/3)
 df <- df[keep, ]
 
-tts <- trainTest.split(df, class, mincorr = 0.2)
-data.trainS4 <- tts[[1]]
-data.testS4 <- tts[[2]]
-classts <- tts[[3]]
-# mini-check per vedere se i geni filtati sono gli stessi
-sum(rownames(assay(data.trainS4)) == rownames(assay(data.testS4)))
 
-svm <- svm.based(data.trainS4, data.testS4, classts)
-svmRadial <- svm[[1]] 
-svmPoly <- svm[[2]]
-svmLinear <- svm[[3]]
+crossVal.1layer <- function(seed, i, mincorr = 0.3){
+  
+  tts <- trainTest.split(df, class, mincorr = mincorr, seed = seed)
+  data.trainS4 <- tts[[1]]
+  data.testS4 <- tts[[2]]
+  classts <- tts[[3]]
+  # mini-check per vedere se i geni filtati sono gli stessi
+  sum(rownames(assay(data.trainS4)) == rownames(assay(data.testS4)))
 
-voom <- voom.based(data.trainS4, data.testS4, classts)
-voomDLDA <- voom[[1]]
-voomDQDA <- voom[[2]]
-voomNSC <- voom[[3]]
+  svm <- svm.based(data.trainS4, data.testS4, classts)
+  svmRadial <- svm[[1]] 
+  svmPoly <- svm[[2]]
+  svmLinear <- svm[[3]]
 
-lin <- linear.based(data.trainS4, data.testS4, classts)
-PLDA <- lin[[1]]
-PLDA2 <- lin[[2]]
-NBLDA <- lin[[3]]
+  voom <- voom.based(data.trainS4, data.testS4, classts)
+  voomDLDA <- voom[[1]]
+  voomDQDA <- voom[[2]]
+  voomNSC <- voom[[3]]
 
-sparse <- sparse.based(data.trainS4, data.testS4, classts) # <-- too slow!!
-#sdwd <- sparse[[1]]
-sparseLDA <- sparse[[2]]
-#spls <- sparse[[3]]
+  lin <- linear.based(data.trainS4, data.testS4, classts)
+  PLDA <- lin[[1]]
+  PLDA2 <- lin[[2]]
+  NBLDA <- lin[[3]]
 
-net <- nnet.based(data.trainS4, data.testS4, classts) # <-- not properly working!!
-#nnet <- net[[1]]
-mlp <- net[[2]]
-mlpML <- net[[3]]
-#avNNet <- net[[4]]
+  sparse <- sparse.based(data.trainS4, data.testS4, classts) # <-- too slow!!
+  #sdwd <- sparse[[1]]
+  sparseLDA <- sparse[[2]]
+  #spls <- sparse[[3]]
 
-tree <- tree.based(data.trainS4, data.testS4, classts)
-rpart <- tree[[1]]
-cforest <- tree[[2]]
-ctree <- tree[[3]]
-rf <- tree[[4]]
+  net <- nnet.based(data.trainS4, data.testS4, classts) # <-- not properly working!!
+  #nnet <- net[[1]]
+  mlp <- net[[2]]
+  mlpML <- net[[3]]
+  #avNNet <- net[[4]]
 
-bag <- bagg.based(data.trainS4, data.testS4, classts)
-AdaBag <- bag[[1]]
-treebag <- bag[[2]]
-bagFDA <- bag[[3]]
+  tree <- tree.based(data.trainS4, data.testS4, classts)
+  rpart <- tree[[1]]
+  cforest <- tree[[2]]
+  ctree <- tree[[3]]
+  rf <- tree[[4]]
 
-bst <- boost.based(data.trainS4, data.testS4, classts)
-gamboost <- bst[[1]]
-bstSm <- bst[[2]]
-bstTree <- bst[[3]]
+  bag <- bagg.based(data.trainS4, data.testS4, classts)
+  AdaBag <- bag[[1]]
+  treebag <- bag[[2]]
+  bagFDA <- bag[[3]]
 
-partls <- pls.based(data.trainS4, data.testS4, classts)
-gpls <- partls[[1]]
-pls <- partls[[2]]
-spls <- partls[[3]]
+  bst <- boost.based(data.trainS4, data.testS4, classts)
+  gamboost <- bst[[1]]
+  bstSm <- bst[[2]]
+  bstTree <- bst[[3]]
+
+  partls <- pls.based(data.trainS4, data.testS4, classts)
+  gpls <- partls[[1]]
+  pls <- partls[[2]]
+  spls <- partls[[3]]
 
 
+  acc.df <- data.frame(svmRadial = c(svmRadial$overall, svmRadial$byClass), 
+                       svmPoly = c(svmPoly$overall, svmPoly$byClass), 
+                       svmLinear = c(svmLinear$overall, svmLinear$byClass),
+                       voomDLDA = c(voomDLDA$overall, voomDLDA$byClass),
+                       voomDQDA = c(voomDQDA$overall, voomDQDA$byClass),
+                       voomNSC = c(voomNSC$overall, voomNSC$byClass),
+                       PLDA = c(PLDA$overall, PLDA$byClass),
+                       PLDA2 = c(PLDA2$overall, PLDA2$byClass),
+                       NBLDA = c(NBLDA$overall, NBLDA$byClass),
+                       sparseLDA = c(sparseLDA$overall, sparseLDA$byClass),
+                       # nnet = c(nnet$overall, nnet$byClass),
+                       mlp = c(mlp$overall, mlp$byClass),
+                       mlpML = c(mlpML$overall, mlpML$byClass),
+                       # avNNet = c(avNNet$overall, avNNet$byClass),
+                       rpart = c(rpart$overall, rpart$byClass),
+                       cforest = c(cforest$overall, cforest$byClass),
+                       ctree = c(ctree$overall, ctree$byClass),
+                       rf = c(rf$overall, rf$byClass),
+                       AdaBag = c(AdaBag$overall, AdaBag$byClass),
+                       treebag = c(treebag$overall, treebag$byClass),
+                       bagFDA = c(bagFDA$overall, bagFDA$byClass),
+                       gamboost = c(gamboost$overall, gamboost$byClass),
+                       bstSm = c(bstSm$overall, bstSm$byClass),
+                       bstTree = c(bstTree$overall, bstTree$byClass),
+                       gpls = c(gpls$overall, gpls$byClass),
+                       pls = c(pls$overall, pls$byClass),
+                       spls = c(spls$overall, spls$byClass))
+  #i=1
+  write.csv2(t(acc.df), paste0("../Results/AccuracyTable_",i,".csv"))
+}
 
 
+cv <- 5
+for (i in c(1:cv)) {
+  
+  print(paste0("Performing Cross-Validation of ",i," layer"))
+  crossVal.1layer(seed = i, i = i, mincorr = 0.2)
+  
+}
 
 
