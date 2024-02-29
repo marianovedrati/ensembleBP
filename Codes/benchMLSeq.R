@@ -829,7 +829,7 @@ cv <- 5
 for (i in c(1:cv)) {
   
   print(paste0("Performing Cross-Validation of ",i," layer"))
-  crossVal.1layer(seed = i, i = i, mincorr = 0.2)
+  crossVal.1layer(seed = i, i = i, mincorr = 0.3)
   
 }
 
