@@ -45,12 +45,30 @@ ggplot(df, aes(x = as.factor(X), y = Accuracy, fill = as.factor(Group))) +
   geom_boxplot() +
   geom_point() +
   scale_fill_brewer(palette = c("Paired")) +
-  theme_minimal()
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, face = "bold"))
 
 
+ggplot(df, aes(x = as.factor(X), y = Precision, fill = as.factor(Group))) +
+  geom_boxplot() +
+  geom_point() +
+  scale_fill_brewer(palette = c("Paired")) +
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, face = "bold"))
 
+ggplot(df, aes(x = as.factor(X), y = Recall, fill = as.factor(Group))) +
+  geom_boxplot() +
+  geom_point() +
+  scale_fill_brewer(palette = c("Paired")) +
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, face = "bold"))
 
-
+ggplot(df, aes(x = as.factor(X), y = Balanced.Accuracy, fill = as.factor(Group))) +
+  geom_boxplot() +
+  geom_point() +
+  scale_fill_brewer(palette = c("Paired")) +
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, face = "bold"))
 
 
 
