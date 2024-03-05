@@ -48,19 +48,10 @@ combine_genes <- function(lista_geni, method) {
 
 
 
-
-# # Lista dei geni generati dagli algoritmi
-# geni_algoritmo1 <- c("gene1", "gene2", "gene3","gene5")
-# geni_algoritmo2 <- c("gene2", "gene3", "gene4")
-# geni_algoritmo3 <- c("gene3", "gene4", "gene5")
-# 
-# # Creare una lista contenente le liste di geni di ogni algoritmo
-# lista_geni <- list(algoritmo1 = geni_algoritmo1, algoritmo2 = geni_algoritmo2, algoritmo3 = geni_algoritmo3)
-# 
-# risultato_union <- combine_genes(lista_geni, method = "union")
-
-
-# @  @ Funzione per fare UpsetPlot
+# @  Funzione per fare UpsetPlot
+# il mio df deve avere i nomi delle dievrse famiglie di algoritmi sulle colonne
+# mentre come righe i geni derivati da tutti gli algoritmi
+# il df da utilizzare è il df risultatante dallea funzione combine_genes
 
 
 
@@ -73,12 +64,4 @@ crea_dataframe_upset <- function(df) {
 }
 
 
-# Lista dei geni generati dagli algoritmi
-geni_algoritmo1 <- c("gene1", "gene2", "gene3")
-geni_algoritmo2 <- c("gene2", "gene3", "gene4")
-geni_algoritmo3 <- c("gene3", "gene4", "gene5")
 
-# Creare una lista contenente le liste di geni di ogni algoritmo
-lista_geni <- list(algoritmo1 = geni_algoritmo1, 
-                   algoritmo2 = geni_algoritmo2, 
-                   algoritmo3 = geni_algoritmo3)
