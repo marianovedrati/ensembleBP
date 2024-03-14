@@ -789,7 +789,7 @@ pls.based <- function(data.trainS4, data.testS4, classts,
   tblpls <- table(Predicted = pred.pls, Actual = actual)
   pls.cm <- confusionMatrix(tblpls, positive = "D")
   # compute elbow genes
-  coeff_pls <- abs(fit.pls@modelInfo@trainedModel[["finalModel"]][["coefficients"]][,1,])
+  coeff_pls <- abs(fit.pls@modelInfo@trainedModel[["finalModel"]][["coefficients"]][,1,2])
   genes_pls_plsBased <- list(elbow_comp(coefficients = coeff_pls))
   
   print("Fitting SPLS")
@@ -893,6 +893,7 @@ crossVal.1layer <- function(seed, i, mincorr = 0.4){
   bstSm <- bst[[2]]
   bstTree <- bst[[3]]
   genes_gamboost_boostBased <- bst[[4]]
+  genes_gamboost_boostBased[[1]] <- sub("bbs\\(([^,]+),.*", "\\1", genes_gamboost_boostBased[[1]])
   genes_bstSm_boostBased <- bst[[5]]
   genes_bstTree_boostBased <- bst[[6]]
 
@@ -950,7 +951,7 @@ crossVal.1layer <- function(seed, i, mincorr = 0.4){
                      genes_rf_treeBased = genes_rf_treeBased[[1]],
                      genes_AdaBag_baggedBased = names(genes_AdaBag_baggedBased[[1]][genes_AdaBag_baggedBased[[1]]>0]),
                      genes_treebag_baggedBased = genes_treebag_baggedBased[[1]],
-                     genes_gamboost_boostBased = genes_gamboost_boostBased,
+                     genes_gamboost_boostBased = genes_gamboost_boostBased[[1]],
                      genes_bstSm_boostBased = genes_bstSm_boostBased[[1]],
                      genes_bstTree_boostBased = genes_bstTree_boostBased[[1]],
                      genes_gpls_plsBased = genes_gpls_plsBased[[1]],
@@ -971,5 +972,5 @@ for (i in c(1:cv)) {
   
 }
 
-# a <- readRDS(file = "../Results/list_genes_1.rds")
+a <- readRDS(file = "../Results/list_genes_1.rds")
 
