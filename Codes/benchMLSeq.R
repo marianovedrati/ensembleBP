@@ -95,34 +95,35 @@ elbow_comp <- function(coefficients){
   library(dplyr)
   library(segmented)
   
-  # Supponiamo di avere i coefficienti salvati in un vettore chiamato 'coefficients'
-  # coefficients <- abs(rnorm(100))  # Esempio di coefficienti
-  # names(coefficients)<-as.character(1:100)
+  # coefficients are saved in a named vector called coefficients e.g.
+  # coefficients <- abs(rnorm(100))  # coeff example
+  # names(coefficients) <- as.character(1:100)
   coefficients <- coefficients
   
-  # 1. Ordina i coefficienti in ordine decrescente
+  # 1. order coefficients in decreasing order
   sorted_coefficients <- sort(coefficients, decreasing = TRUE)
   
-  # 2. Fitta una curva ai coefficienti ordinati
-  # Creazione di un dataframe con i dati ordinati
+  # 2. fit a curve over ordered coefficients
+  # build a df with oordered data
   data <- data.frame(index = seq_along(sorted_coefficients), coefficient = sorted_coefficients)
   
-  # Fitta una curva con il pacchetto 'segmented'
+  # fit the curve with library(segmented)
   fit <- segmented(lm(coefficient ~ index, data = data), seg.Z = ~ index, psi = list(index = 5))
   
-  # 3. Trova il punto di gomito sulla curva fittata
+  # 3. Find elbow point over fitted curve
   elbow_point <- round(summary(fit)$psi[[2]])
   
-  # Plot dei dati e della curva fittata
+  # Plot data of fitted curve
   #plot(data$index, data$coefficient, type = "l", main = "Elbow Method", xlab = "Index", ylab = "Coefficient")
   plot(sorted_coefficients)
-  lines(data$index, predict(fit), col = "red")
-  abline(v = elbow_point, col = "blue", lty = 2)
+  lines(data$index, predict(fit), col = "indianred")
+  abline(v = elbow_point, col = "lightblue", lty = 2)
   legend("topright", legend = c("Data", "Fitted Curve", "Elbow Point"), col = c("black", "red", "blue"), lty = c(1, 1, 2))
   
-  # Stampa il punto di gomito
+  # print elbow point
   print(paste("Elbow Point:", elbow_point))
-  selected_features<-names(sorted_coefficients)[1:elbow_point]
+  selected_features <- names(sorted_coefficients)[1:elbow_point]
+  
   return(selected_features)
   
 }
@@ -140,7 +141,7 @@ elbow_comp <- function(coefficients){
 #' @param r number of repeats for CV
 #' @returns A list of Confusion Matrices one for each svm-based method
 svm.based <- function(data.trainS4, data.testS4, classts, 
-                      tL = 10, n = 5, r = 2){
+                      tL = 5, n = 5, r = 5){
   
   # Define control function for all svm.based classifiers
   svmControl <- trainControl(method = "repeatedcv", number = n,
@@ -222,7 +223,7 @@ svm.based <- function(data.trainS4, data.testS4, classts,
 #' @param r number of repeats for CV
 #' @returns A list of Confusion Matrices one for each VOOM-based method
 voom.based <- function(data.trainS4, data.testS4, classts, 
-                       tL = 20, n = 10, r = 10){
+                       tL = 5, n = 5, r = 5){
   
   # Define control function for all voom.based classifiers
   voomControl <- voomControl(method = "repeatedcv", number = n, repeats = r,
@@ -302,7 +303,7 @@ voom.based <- function(data.trainS4, data.testS4, classts,
 #' @param r number of repeats for CV
 #' @returns A list of Confusion Matrices one for each linear-based method
 linear.based <- function(data.trainS4, data.testS4, classts, 
-                          tL = 25, n = 5, r = 5){
+                          tL = 5, n = 5, r = 5){
   
   # Define control function for all voom.based classifiers
   linearControl <- discreteControl(method = "repeatedcv", number = n, repeats = r,
@@ -374,7 +375,7 @@ linear.based <- function(data.trainS4, data.testS4, classts,
 #' @param r number of repeats for CV
 #' @returns A list of Confusion Matrices one for each sparse-based method
 sparse.based <- function(data.trainS4, data.testS4, classts, 
-                         tL = 2, n = 2, r = 2){
+                         tL = 5, n = 5, r = 5){
   
   library(sdwd)
   library(sparseLDA)
@@ -411,85 +412,85 @@ sparse.based <- function(data.trainS4, data.testS4, classts,
 
 
 
-#' @description Tests several NNet-based classifiers
-#' @param data.trainS4
-#' @param data.testS4
-#' @param classts
-#' @param tL tune Length
-#' @param n number of CV
-#' @param r number of repeats for CV
-#' @returns A list of Confusion Matrices one for each NNet-based method
-nnet.based <- function(data.trainS4, data.testS4, classts, 
-                         tL = 2, n = 2, r = 2){
-  
-  # Define control function for all NNet.based classifiers
-  nnetControl <- trainControl(method = "repeatedcv", number = n,
-                                repeats = r, classProbs = TRUE)
-  
-  print("Fitting nnet")
-  # set.seed(1510)
-  # # Sparse Distance Weighted Discrimination
-  # fit.nnet <- classify(data = data.trainS4, method = "nnet",
-  #                      preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
-  #                      control = nnetControl)
-  # 
-  # #Predicted class labels
-  # pred.nnet <- predict(fit.nnet, data.testS4)
-  # pred.nnet <- relevel(pred.nnet, ref = "D")
-  actual <- relevel(classts$condition, ref = "D")
-
-  # tblnnet <- table(Predicted = pred.nnet, Actual = actual)
-  # nnet.cm <- confusionMatrix(tblnnet, positive = "D")
-  nnet.cm=1
-  
-  print("Fitting mlp")
-  set.seed(1510)
-  # Sparse linear discriminant analysis
-  fit.mlp <- classify(data = data.trainS4, method = "mlp",
-                            preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
-                            control = nnetControl)
-  
-  #Predicted class labels
-  pred.mlp <- predict(fit.mlp, data.testS4)
-  pred.mlp <- relevel(pred.mlp, ref = "D")
-  
-  tblmlp <- table(Predicted = pred.mlp, Actual = actual)
-  mlp.cm <- confusionMatrix(tblmlp, positive = "D")
-  
-  print("Fitting mlpML")
-  set.seed(1510)
-  # Sparse partial least squares
-  fit.mlpML <- classify(data = data.trainS4, method = "mlpML",
-                       preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
-                       control = nnetControl)
-  
-  #Predicted class labels
-  pred.mlpML <- predict(fit.mlpML, data.testS4)
-  pred.mlpML <- relevel(pred.mlpML, ref = "D")
-  
-  tblmlpML <- table(Predicted = pred.mlpML, Actual = actual)
-  mlpML.cm <- confusionMatrix(tblmlpML, positive = "D")
-  
-  # print("Fitting avNNet")
-  # set.seed(1510)
-  # # Sparse partial least squares
-  # fit.avNNet <- classify(data = data.trainS4, method = "avNNet",
-  #                       preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
-  #                       control = nnetControl)
-  # 
-  # #Predicted class labels
-  # pred.avNNet <- predict(fit.avNNet, data.testS4)
-  # pred.avNNet <- relevel(pred.avNNet, ref = "D")
-  # 
-  # tblavNNet <- table(Predicted = pred.avNNet, Actual = actual)
-  # avNNet.cm <- confusionMatrix(tblavNNet, positive = "D")
-  avNNet.cm = 1
-  
-  print("Successfully accomplished NNet-based methods")
-  
-  return(list(nnet.cm, mlp.cm, mlpML.cm, avNNet.cm))
-  
-}
+#' #' @description Tests several NNet-based classifiers
+#' #' @param data.trainS4
+#' #' @param data.testS4
+#' #' @param classts
+#' #' @param tL tune Length
+#' #' @param n number of CV
+#' #' @param r number of repeats for CV
+#' #' @returns A list of Confusion Matrices one for each NNet-based method
+#' nnet.based <- function(data.trainS4, data.testS4, classts, 
+#'                          tL = 2, n = 2, r = 2){
+#'   
+#'   # Define control function for all NNet.based classifiers
+#'   nnetControl <- trainControl(method = "repeatedcv", number = n,
+#'                                 repeats = r, classProbs = TRUE)
+#'   
+#'   print("Fitting nnet")
+#'   # set.seed(1510)
+#'   # # Sparse Distance Weighted Discrimination
+#'   # fit.nnet <- classify(data = data.trainS4, method = "nnet",
+#'   #                      preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
+#'   #                      control = nnetControl)
+#'   # 
+#'   # #Predicted class labels
+#'   # pred.nnet <- predict(fit.nnet, data.testS4)
+#'   # pred.nnet <- relevel(pred.nnet, ref = "D")
+#'   actual <- relevel(classts$condition, ref = "D")
+#' 
+#'   # tblnnet <- table(Predicted = pred.nnet, Actual = actual)
+#'   # nnet.cm <- confusionMatrix(tblnnet, positive = "D")
+#'   nnet.cm=1
+#'   
+#'   print("Fitting mlp")
+#'   set.seed(1510)
+#'   # Sparse linear discriminant analysis
+#'   fit.mlp <- classify(data = data.trainS4, method = "mlp",
+#'                             preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
+#'                             control = nnetControl)
+#'   
+#'   #Predicted class labels
+#'   pred.mlp <- predict(fit.mlp, data.testS4)
+#'   pred.mlp <- relevel(pred.mlp, ref = "D")
+#'   
+#'   tblmlp <- table(Predicted = pred.mlp, Actual = actual)
+#'   mlp.cm <- confusionMatrix(tblmlp, positive = "D")
+#'   
+#'   print("Fitting mlpML")
+#'   set.seed(1510)
+#'   # Sparse partial least squares
+#'   fit.mlpML <- classify(data = data.trainS4, method = "mlpML",
+#'                        preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
+#'                        control = nnetControl)
+#'   
+#'   #Predicted class labels
+#'   pred.mlpML <- predict(fit.mlpML, data.testS4)
+#'   pred.mlpML <- relevel(pred.mlpML, ref = "D")
+#'   
+#'   tblmlpML <- table(Predicted = pred.mlpML, Actual = actual)
+#'   mlpML.cm <- confusionMatrix(tblmlpML, positive = "D")
+#'   
+#'   # print("Fitting avNNet")
+#'   # set.seed(1510)
+#'   # # Sparse partial least squares
+#'   # fit.avNNet <- classify(data = data.trainS4, method = "avNNet",
+#'   #                       preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
+#'   #                       control = nnetControl)
+#'   # 
+#'   # #Predicted class labels
+#'   # pred.avNNet <- predict(fit.avNNet, data.testS4)
+#'   # pred.avNNet <- relevel(pred.avNNet, ref = "D")
+#'   # 
+#'   # tblavNNet <- table(Predicted = pred.avNNet, Actual = actual)
+#'   # avNNet.cm <- confusionMatrix(tblavNNet, positive = "D")
+#'   avNNet.cm = 1
+#'   
+#'   print("Successfully accomplished NNet-based methods")
+#'   
+#'   return(list(nnet.cm, mlp.cm, mlpML.cm, avNNet.cm))
+#'   
+#' }
 
 
 #' @description Tests several tree-based classifiers
@@ -501,7 +502,7 @@ nnet.based <- function(data.trainS4, data.testS4, classts,
 #' @param r number of repeats for CV
 #' @returns A list of Confusion Matrices one for each tree-based method
 tree.based <- function(data.trainS4, data.testS4, classts, 
-                       tL = 2, n = 2, r = 2){
+                       tL = 5, n = 5, r = 5){
   
   # Define control function for all NNet.based classifiers
   treeControl <- trainControl(method = "repeatedcv", number = n,
@@ -599,7 +600,7 @@ tree.based <- function(data.trainS4, data.testS4, classts,
 #' @param r number of repeats for CV
 #' @returns A list of Confusion Matrices one for each bagging-based method
 bagg.based <- function(data.trainS4, data.testS4, classts, 
-                         tL = 10, n = 2, r = 2){
+                         tL = 5, n = 5, r = 5){
   
   library(adabag)
   library(earth)
@@ -676,7 +677,7 @@ bagg.based <- function(data.trainS4, data.testS4, classts,
 #' @param r number of repeats for CV
 #' @returns A list of Confusion Matrices one for each boost-based method
 boost.based <- function(data.trainS4, data.testS4, classts, 
-                       tL = 2, n = 2, r = 2){
+                       tL = 5, n = 5, r = 5){
   
   # Define control function for all boost.based classifiers
   boostControl <- trainControl(method = "repeatedcv", number = n,
@@ -747,7 +748,7 @@ boost.based <- function(data.trainS4, data.testS4, classts,
 #' @param r number of repeats for CV
 #' @returns A list of Confusion Matrices one for each pls-based method
 pls.based <- function(data.trainS4, data.testS4, classts, 
-                         tL = 20, n = 2, r = 2){
+                         tL = 5, n = 5, r = 5){
   
   library(gpls)
   
@@ -849,15 +850,20 @@ crossVal.1layer <- function(seed, i, mincorr = 0.4){
   voomDLDA <- voom[[1]]
   voomDQDA <- voom[[2]]
   voomNSC <- voom[[3]]
+  genes_voomDLDA_voomBased <- voom[[4]]
+  genes_voomDQDA_voomBased <- voom[[5]]
+  genes_voomNSC_voomBased <- voom[[6]]
 
   lin <- linear.based(data.trainS4, data.testS4, classts)
   PLDA <- lin[[1]]
   PLDA2 <- lin[[2]]
   NBLDA <- lin[[3]]
+  genes_PLDA_LDABased <- lin[[4]]
+  genes_PLDA2_LDABased <- lin[[5]]
 
   sparse <- sparse.based(data.trainS4, data.testS4, classts) # <-- too slow!!
   sparseLDA <- sparse[[1]]
-  genes_sparseLDA_LDAbased <- sparse[[2]]
+  genes_sparseLDA_LDABased <- sparse[[2]]
 
   # net <- nnet.based(data.trainS4, data.testS4, classts) # <-- not properly working!!
   # #nnet <- net[[1]]
@@ -870,21 +876,33 @@ crossVal.1layer <- function(seed, i, mincorr = 0.4){
   cforest <- tree[[2]]
   ctree <- tree[[3]]
   rf <- tree[[4]]
+  genes_rpart_treeBased <- tree[[5]]
+  genes_cforest_treeBased <- tree[[6]]
+  genes_ctree_treeBased <- tree[[7]]
+  genes_rf_treeBased <- tree[[8]]
 
   bag <- bagg.based(data.trainS4, data.testS4, classts)
   AdaBag <- bag[[1]]
   treebag <- bag[[2]]
   bagFDA <- bag[[3]]
+  genes_AdaBag_baggedBased <- bag[[4]]
+  genes_treebag_baggedBased <- bag[[5]]
 
   bst <- boost.based(data.trainS4, data.testS4, classts)
   gamboost <- bst[[1]]
   bstSm <- bst[[2]]
   bstTree <- bst[[3]]
+  genes_gamboost_boostBased <- bst[[4]]
+  genes_bstSm_boostBased <- bst[[5]]
+  genes_bstTree_boostBased <- bst[[6]]
 
   partls <- pls.based(data.trainS4, data.testS4, classts)
   gpls <- partls[[1]]
   pls <- partls[[2]]
   spls <- partls[[3]]
+  genes_gpls_plsBased <- partls[[4]]
+  genes_pls_plsBased <- partls[[5]]
+  genes_spls_plsBased <- partls[[6]]
 
 
   acc.df <- data.frame(svmRadial = c(svmRadial$overall, svmRadial$byClass), 
@@ -916,6 +934,30 @@ crossVal.1layer <- function(seed, i, mincorr = 0.4){
                        spls = c(spls$overall, spls$byClass))
   #i=1
   write.csv2(t(acc.df), paste0("../Results/AccuracyTable_",i,".csv"))
+  
+  list_genes <- list(genes_svmRadial_SVMBased = genes_svmRadial_SVMBased,
+                     genes_svmPoly_SVMBased = genes_svmPoly_SVMBased,
+                     genes_svmLinear_SVMBased = genes_svmLinear_SVMBased,
+                     genes_voomDLDA_voomBased = genes_voomDLDA_voomBased,
+                     genes_voomDQDA_voomBased = genes_voomDQDA_voomBased,
+                     genes_voomNSC_voomBased = genes_voomNSC_voomBased,
+                     genes_PLDA_LDABased = genes_PLDA_LDABased,
+                     genes_PLDA2_LDABased = genes_PLDA2_LDABased,
+                     genes_sparseLDA_LDABased = genes_sparseLDA_LDABased,
+                     genes_rpart_treeBased = genes_rpart_treeBased,
+                     genes_cforest_treeBased = genes_cforest_treeBased,
+                     genes_ctree_treeBased = genes_ctree_treeBased,
+                     genes_rf_treeBased = genes_rf_treeBased,
+                     genes_AdaBag_baggedBased = genes_AdaBag_baggedBased,
+                     genes_treebag_baggedBased = genes_treebag_baggedBased,
+                     genes_gamboost_boostBased = genes_gamboost_boostBased,
+                     genes_bstSm_boostBased = genes_bstSm_boostBased,
+                     genes_bstTree_boostBased = genes_bstTree_boostBased,
+                     genes_gpls_plsBased = genes_gpls_plsBased,
+                     genes_pls_plsBased = genes_pls_plsBased,
+                     genes_spls_plsBased = genes_spls_plsBased)
+  
+  saveRDS(list_genes, paste0("../Results/list_genes_",i,".rds"))
 }
 
 
