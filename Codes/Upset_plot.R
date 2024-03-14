@@ -59,9 +59,9 @@ combine_genes <- function(lista_geni, method) {
 crea_dataframe_upset <- function(df) {
   
   library(UpSetR)
-  plot <- as.data.frame(ifelse(df == "TRUE", 1, 0))
-  return(plot)
+  df <- as.data.frame(ifelse(df == "TRUE", 1, 0))
+  print(upset(df))
+  
 }
-
 
 
