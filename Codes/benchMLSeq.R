@@ -836,7 +836,7 @@ crossVal.1layer <- function(seed, i, mincorr = 0.4){
   data.testS4 <- tts[[2]]
   classts <- tts[[3]]
   # mini-check per vedere se i geni filtati sono gli stessi
-  sum(rownames(assay(data.trainS4)) == rownames(assay(data.testS4)))
+  print(sum(rownames(assay(data.trainS4)) == rownames(assay(data.testS4))))
 
   svm <- svm.based(data.trainS4, data.testS4, classts)
   svmRadial <- svm[[1]] 
@@ -960,12 +960,12 @@ crossVal.1layer <- function(seed, i, mincorr = 0.4){
   saveRDS(list_genes, paste0("../Results/list_genes_",i,".rds"))
 }
 
-
+i = 1
 cv <- 5
 for (i in c(1:cv)) {
   
   print(paste0("Performing Cross-Validation of ",i," layer"))
-  crossVal.1layer(seed = i, i = i, mincorr = 0.3)
+  crossVal.1layer(seed = i, i = i, mincorr = 0.4)
   
 }
 
