@@ -748,7 +748,7 @@ boost.based <- function(data.trainS4, data.testS4, classts,
 #' @param r number of repeats for CV
 #' @returns A list of Confusion Matrices one for each pls-based method
 pls.based <- function(data.trainS4, data.testS4, classts, 
-                         tL = 5, n = 5, r = 5){
+                         tL = 10, n = 5, r = 5){
   
   library(gpls)
   
@@ -935,29 +935,31 @@ crossVal.1layer <- function(seed, i, mincorr = 0.4){
   #i=1
   write.csv2(t(acc.df), paste0("../Results/AccuracyTable_",i,".csv"))
   
-  list_genes <- list(genes_svmRadial_SVMBased = genes_svmRadial_SVMBased,
-                     genes_svmPoly_SVMBased = genes_svmPoly_SVMBased,
-                     genes_svmLinear_SVMBased = genes_svmLinear_SVMBased,
-                     genes_voomDLDA_voomBased = genes_voomDLDA_voomBased,
-                     genes_voomDQDA_voomBased = genes_voomDQDA_voomBased,
-                     genes_voomNSC_voomBased = genes_voomNSC_voomBased,
-                     genes_PLDA_LDABased = genes_PLDA_LDABased,
-                     genes_PLDA2_LDABased = genes_PLDA2_LDABased,
-                     genes_sparseLDA_LDABased = genes_sparseLDA_LDABased,
-                     genes_rpart_treeBased = genes_rpart_treeBased,
-                     genes_cforest_treeBased = genes_cforest_treeBased,
-                     genes_ctree_treeBased = genes_ctree_treeBased,
-                     genes_rf_treeBased = genes_rf_treeBased,
-                     genes_AdaBag_baggedBased = genes_AdaBag_baggedBased,
-                     genes_treebag_baggedBased = genes_treebag_baggedBased,
+  list_genes <- list(genes_svmRadial_SVMBased = genes_svmRadial_SVMBased[[1]],
+                     genes_svmPoly_SVMBased = genes_svmPoly_SVMBased[[1]],
+                     genes_svmLinear_SVMBased = genes_svmLinear_SVMBased[[1]],
+                     genes_voomDLDA_voomBased = genes_voomDLDA_voomBased[[1]],
+                     genes_voomDQDA_voomBased = genes_voomDQDA_voomBased[[1]],
+                     genes_voomNSC_voomBased = genes_voomNSC_voomBased[[1]],
+                     genes_PLDA_LDABased = genes_PLDA_LDABased[[1]],
+                     genes_PLDA2_LDABased = genes_PLDA2_LDABased[[1]],
+                     genes_sparseLDA_LDABased = genes_sparseLDA_LDABased[[1]],
+                     genes_rpart_treeBased = names(genes_rpart_treeBased[[1]]),
+                     genes_cforest_treeBased = genes_cforest_treeBased[[1]],
+                     genes_ctree_treeBased = genes_ctree_treeBased[[1]],
+                     genes_rf_treeBased = genes_rf_treeBased[[1]],
+                     genes_AdaBag_baggedBased = names(genes_AdaBag_baggedBased[[1]][genes_AdaBag_baggedBased[[1]]>0]),
+                     genes_treebag_baggedBased = genes_treebag_baggedBased[[1]],
                      genes_gamboost_boostBased = genes_gamboost_boostBased,
-                     genes_bstSm_boostBased = genes_bstSm_boostBased,
-                     genes_bstTree_boostBased = genes_bstTree_boostBased,
-                     genes_gpls_plsBased = genes_gpls_plsBased,
-                     genes_pls_plsBased = genes_pls_plsBased,
-                     genes_spls_plsBased = genes_spls_plsBased)
+                     genes_bstSm_boostBased = genes_bstSm_boostBased[[1]],
+                     genes_bstTree_boostBased = genes_bstTree_boostBased[[1]],
+                     genes_gpls_plsBased = genes_gpls_plsBased[[1]],
+                     genes_pls_plsBased = genes_pls_plsBased[[1]],
+                     genes_spls_plsBased = genes_spls_plsBased[[1]])
   
   saveRDS(list_genes, paste0("../Results/list_genes_",i,".rds"))
+  
+  return(list(acc.df, list_genes))
 }
 
 i = 1
@@ -965,8 +967,9 @@ cv <- 5
 for (i in c(1:cv)) {
   
   print(paste0("Performing Cross-Validation of ",i," layer"))
-  crossVal.1layer(seed = i, i = i, mincorr = 0.4)
+  crossVal.1layer(seed = i, i = i, mincorr = 0.45)
   
 }
 
+# a <- readRDS(file = "../Results/list_genes_1.rds")
 
