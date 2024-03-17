@@ -36,12 +36,33 @@ Upset_plot_no_merge <- function(lista_geni) {
   df$RowName <- NULL
   df <- as.data.frame(t(df))
   df <- as.data.frame(ifelse(df == "TRUE", 1, 0))
-  print(upset(df))
-  
+  print(upset(df, nsets = ncol(df), nintersects = nrow(df),
+              color.pal = 1, sets.bar.color = "lightblue",
+              mb.ratio = c(0.4,0.6)))
 }
 
+a <- readRDS(file = "../Results/list_genes_1.rds")
+b <- readRDS(file = "../Results/list_genes_2.rds")
+c <- readRDS(file = "../Results/list_genes_3.rds")
+d <- readRDS(file = "../Results/list_genes_4.rds")
+e <- readRDS(file = "../Results/list_genes_5.rds")
+f <- readRDS(file = "../Results/list_genes_6.rds")
+g <- readRDS(file = "../Results/list_genes_7.rds")
+h <- readRDS(file = "../Results/list_genes_8.rds")
+i <- readRDS(file = "../Results/list_genes_9.rds")
+j <- readRDS(file = "../Results/list_genes_10.rds")
 
-
+Upset_plot_no_merge(a)
+Upset_plot_no_merge(b)
+Upset_plot_no_merge(c)
+Upset_plot_no_merge(d)
+Upset_plot_no_merge(e)
+Upset_plot_no_merge(f)
+Upset_plot_no_merge(g)
+Upset_plot_no_merge(h)
+Upset_plot_no_merge(i)
+Upset_plot_no_merge(j)
+#lista_geni <- a
 
 
 

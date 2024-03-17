@@ -748,7 +748,7 @@ boost.based <- function(data.trainS4, data.testS4, classts,
 #' @param r number of repeats for CV
 #' @returns A list of Confusion Matrices one for each pls-based method
 pls.based <- function(data.trainS4, data.testS4, classts, 
-                         tL = 10, n = 5, r = 5){
+                         tL = 5, n = 5, r = 5){
   
   library(gpls)
   
@@ -789,8 +789,9 @@ pls.based <- function(data.trainS4, data.testS4, classts,
   tblpls <- table(Predicted = pred.pls, Actual = actual)
   pls.cm <- confusionMatrix(tblpls, positive = "D")
   # compute elbow genes
-  coeff_pls <- abs(fit.pls@modelInfo@trainedModel[["finalModel"]][["coefficients"]][,1,2])
-  genes_pls_plsBased <- list(elbow_comp(coefficients = coeff_pls))
+  # coeff_pls <- abs(fit.pls@modelInfo@trainedModel[["finalModel"]][["coefficients"]][,1,2])
+  # genes_pls_plsBased <- list(elbow_comp(coefficients = coeff_pls))
+  genes_pls_plsBased <- list(c("ADA", "Gino"))
   
   print("Fitting SPLS")
   set.seed(1510)
@@ -829,7 +830,7 @@ keep <- rowSums(df > 10) > round(ncol(df)/3)
 df <- df[keep, ]
 
 seed=123
-crossVal.1layer <- function(seed, i, mincorr = 0.4){
+crossVal.1layer <- function(seed, i, mincorr = 0.3){
   
   tts <- trainTest.split(df, class, mincorr = mincorr, seed = seed)
   data.trainS4 <- tts[[1]]
@@ -902,7 +903,7 @@ crossVal.1layer <- function(seed, i, mincorr = 0.4){
   pls <- partls[[2]]
   spls <- partls[[3]]
   genes_gpls_plsBased <- partls[[4]]
-  genes_pls_plsBased <- partls[[5]]
+  # genes_pls_plsBased <- partls[[5]]
   genes_spls_plsBased <- partls[[6]]
 
 
@@ -955,7 +956,7 @@ crossVal.1layer <- function(seed, i, mincorr = 0.4){
                      genes_bstSm_boostBased = genes_bstSm_boostBased[[1]],
                      genes_bstTree_boostBased = genes_bstTree_boostBased[[1]],
                      genes_gpls_plsBased = genes_gpls_plsBased[[1]],
-                     genes_pls_plsBased = genes_pls_plsBased[[1]],
+                     # genes_pls_plsBased = genes_pls_plsBased[[1]],
                      genes_spls_plsBased = genes_spls_plsBased[[1]])
   
   saveRDS(list_genes, paste0("../Results/list_genes_",i,".rds"))
@@ -964,11 +965,11 @@ crossVal.1layer <- function(seed, i, mincorr = 0.4){
 }
 
 i = 1
-cv <- 5
+cv <- 10
 for (i in c(1:cv)) {
   
   print(paste0("Performing Cross-Validation of ",i," layer"))
-  crossVal.1layer(seed = i, i = i, mincorr = 0.45)
+  crossVal.1layer(seed = i, i = i, mincorr = 0.35)
   
 }
 

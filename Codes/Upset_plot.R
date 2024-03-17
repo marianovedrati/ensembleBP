@@ -64,4 +64,6 @@ crea_dataframe_upset <- function(df) {
   
 }
 
+a <- readRDS(file = "../Results/list_genes_1.rds")
+result <- combine_genes(a, method = "intersection")
 
