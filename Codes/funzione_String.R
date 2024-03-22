@@ -3,8 +3,12 @@
 # gene_list è una lista di geni
 # uso algoritmo edge.betweenees per clusterizzare
 
-
-analyze_gene_network <- function(gene_list, algorithm = "edge.betweenness") {
+## TODO: Aggiungiamo il path del grafico come input della funzione
+## TODO: cambiare i commenti in Inglese
+## TODO: verificare se bisogna installare le librerie prima di chiamarle
+## TODO: verificare che il nome dei geni sia nel formato necessario per STRING, 
+##       altrimenti cambiare i nomi!!
+analyze_gene_network <- function(gene_list, algorithm = "fastgreedy") {
   library(STRINGdb)
   library(ggplot2)
   
@@ -15,6 +19,7 @@ analyze_gene_network <- function(gene_list, algorithm = "edge.betweenness") {
   colnames(gene_data) <- "Gene"
   
   # Inizializza il database STRING
+  ## TODO: questi parametri devono essere tutti richiesti in input dalla funzione
   string_db <- STRINGdb$new(version = "12", species = 9606, network_type = "full", input_directory = "")
   
   # Mappa i geni al database STRING e rimuovi quelli non mappati
@@ -22,21 +27,23 @@ analyze_gene_network <- function(gene_list, algorithm = "edge.betweenness") {
   
   # Plot della rete STRING con link e summary
   # Salvataggio del grafico della rete STRING 
-  plot_network_general_path <- file.path(getwd(), "plot_network_general.pdf")
+  plot_network_general_path <- file.path(getwd(), "../Results/plot_network_general.pdf")
   pdf(plot_network_general_path)
   string_db$plot_network(mapped_genes, add_link = TRUE, add_summary = TRUE)
   dev.off()
   
   # Calcola l'arricchimento nelle annotazioni GO
-  enrichmentGO <- string_db$get_enrichment(mapped_genes, category = "GO", iea = TRUE)
+  enrichmentGO <- string_db$get_enrichment(mapped_genes, category = "Process", iea = TRUE)
   # Calcola l'arricchimento nelle annotazioni KEGG
   enrichmentKEGG <- string_db$get_enrichment(mapped_genes, category = "KEGG", iea = TRUE)
   
   # Ottieni i clusters
-  clustersList <- string_db$get_clusters(mapped_genes$STRING_id)
+  clustersList <- string_db$get_clusters(mapped_genes$STRING_id, algorithm = algorithm)
+  ## TODO: farsi dare il parametro 3 da input
+  clustersList <- clustersList[lengths(clustersList) > 5]
   
   # Imposta il percorso del file PDF per i plot dei cluster
-  clusters_plot_path <- file.path(getwd(), "clusters_plot.pdf")
+  clusters_plot_path <- file.path(getwd(), "../Results/clusters_plot.pdf")
   
   # Inizializza il dispositivo grafico PDF per i plot dei cluster
   pdf(clusters_plot_path)
@@ -61,9 +68,20 @@ analyze_gene_network <- function(gene_list, algorithm = "edge.betweenness") {
 }
 
 
-# # # Utilizzo della funzione
-# list <- readRDS("list_genes_1(1).rds")
-# gene_list <- list[[4]]
-# # 
-# # # Applico funzione
-# result <-  analyze_gene_network(gene_list)
+# # Utilizzo della funzione
+list <- readRDS("../Results/list_genes_2.rds")
+gene_list <- list[[4]]
+#
+# # Applico funzione
+result <-  analyze_gene_network(gene_list)
+
+
+
+result$enrichmentKEGG$description
+result$enrichmentGO$description
+
+
+
+
+
+
