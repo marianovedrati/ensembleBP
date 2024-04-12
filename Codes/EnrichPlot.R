@@ -12,6 +12,7 @@ library(tidyverse)
 library(circlize)
 library(reshape2)
 library(RColorBrewer)
+library(ggplot2)
 
 
 
@@ -167,16 +168,16 @@ circos.plot <- function(enrichment_results,
        ylim = get.cell.meta.data("ylim")
        sector.name = get.cell.meta.data("sector.index")
        circos.text(mean(xlim),
-                  ylim[1] + .1,
-                  sector.name,
-                 facing = "clockwise",
-                niceFacing = TRUE,
-                  adj = c(0, 0.5),
-                  cex = 0.7)
-    #   circos.axis(h = "top",
-    #               labels.cex = 0.2,
-    #               sector.index = sector.name,
-    #               track.index = 2)
+                   ylim[1] + .1,
+                   sector.name,
+                   facing = "clockwise",
+                   niceFacing = TRUE,
+                   adj = c(0, 0.5),
+                   cex = 0.7)
+      circos.axis(h = "top",
+                  labels.cex = 0.2,
+                  sector.index = sector.name,
+                  track.index = 2)
     }, bg.border = NA)
     # 
     if (legend == T){ 
@@ -213,11 +214,33 @@ circos.plot(enrichment_results = go_grouped_signif,
 
 
 
+#'
+#'
+#'
+#'
+#'
+#'
+#'
+bar.plot <- function(enrichment_results, pcutoff = 0.05, low.col = "indianred",
+                     high.col = "lightblue"){
+  
+  library(viridis)
+  
+  enrichment_results <- enrichment_results[order(enrichment_results$p.adjust), ]
+  
+  ggplot(data = enrichment_results, aes(x = p.adjust, y = reorder(Description, -p.adjust), fill = p.adjust)) +
+    geom_bar(stat = "identity") +
+    #scale_fill_viridis(option = viridis.pal) +
+    scale_fill_gradient(low = low.col, high = high.col) +
+    geom_vline(xintercept = pcutoff, linetype="dashed", 
+               color = "indianred") +
+    theme_minimal()
+  
+  
+}
 
 
-
-
-
+bar.plot(enrichment_results = reactome_results[reactome_results$p.adjust< 0.5, ])
 
 
 
@@ -231,17 +254,17 @@ circos.plot(enrichment_results = go_grouped_signif,
 ##       quindi potrebbe dare problemi nel grafico chordDiagram
 ##       visto che avresti i geni chiamati diversamente
 
-# Carica il pacchetto org.Hs.eg.db
-orgdb <- org.Hs.eg.db
-# Estrai gli Entrez IDs dai gene symbol
-entrez_ids <- mapIds(orgdb, keys = gene_list, column = "ENTREZID", keytype = "SYMBOL")
-# Rimuovi i geni che non hanno un Entrez ID associato
-entrez_ids <- entrez_ids[!is.na(entrez_ids)]
-# Utilizza gli Entrez ID per arricchire i pathway KEGG
-kegg_results <- enrichKEGG(gene = entrez_ids,
-                           organism = 'hsa',
-                           keyType = 'ncbi-geneid',
-                           pvalueCutoff = 0.05)
+# # Carica il pacchetto org.Hs.eg.db
+# orgdb <- org.Hs.eg.db
+# # Estrai gli Entrez IDs dai gene symbol
+# entrez_ids <- mapIds(orgdb, keys = gene_list, column = "ENTREZID", keytype = "SYMBOL")
+# # Rimuovi i geni che non hanno un Entrez ID associato
+# entrez_ids <- entrez_ids[!is.na(entrez_ids)]
+# # Utilizza gli Entrez ID per arricchire i pathway KEGG
+# kegg_results <- enrichKEGG(gene = entrez_ids,
+#                            organism = 'hsa',
+#                            keyType = 'ncbi-geneid',
+#                            pvalueCutoff = 0.05)
 
 
 
