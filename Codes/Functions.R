@@ -542,93 +542,6 @@ sparse.LDA <- function(data.trainS4, data.testS4, classts,
 }
 
 
-#' #' @description Tests several NNet-based classifiers
-#' #' @param data.trainS4
-#' #' @param data.testS4
-#' #' @param classts
-#' #' @param tL tune Length
-#' #' @param n number of CV
-#' #' @param r number of repeats for CV
-#' #' @returns A list of Confusion Matrices one for each NNet-based method
-# nnet.based <- function(data.trainS4, data.testS4, classts,
-#                          tL = 2, n = 2, r = 2){
-#   
-#   start.time <- Sys.time()
-#   # Define control function for all NNet.based classifiers
-#   nnetControl <- trainControl(method = "repeatedcv", number = n,
-#                                 repeats = r, classProbs = TRUE)
-# 
-#   print("Fitting nnet")
-#   # set.seed(1510)
-#   # # Sparse Distance Weighted Discrimination
-#   # fit.nnet <- classify(data = data.trainS4, method = "nnet",
-#   #                      preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
-#   #                      control = nnetControl)
-#   #
-#   # #Predicted class labels
-#   # pred.nnet <- predict(fit.nnet, data.testS4)
-#   # pred.nnet <- relevel(pred.nnet, ref = "D")
-#   actual <- relevel(classts$condition, ref = "D")
-# 
-#   # tblnnet <- table(Predicted = pred.nnet, Actual = actual)
-#   # nnet.cm <- confusionMatrix(tblnnet, positive = "D")
-#   nnet.cm=1
-# 
-#   print("Fitting mlp")
-#   set.seed(1510)
-#   # Sparse linear discriminant analysis
-#   fit.mlp <- classify(data = data.trainS4, method = "mlp",
-#                             preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
-#                             control = nnetControl)
-# 
-#   #Predicted class labels
-#   pred.mlp <- predict(fit.mlp, data.testS4)
-#   pred.mlp <- relevel(pred.mlp, ref = "D")
-# 
-#   tblmlp <- table(Predicted = pred.mlp, Actual = actual)
-#   mlp.cm <- confusionMatrix(tblmlp, positive = "D")
-# 
-#   print("Fitting mlpML")
-#   set.seed(1510)
-#   # Sparse partial least squares
-#   fit.mlpML <- classify(data = data.trainS4, method = "mlpML",
-#                        preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
-#                        control = nnetControl)
-# 
-#   #Predicted class labels
-#   pred.mlpML <- predict(fit.mlpML, data.testS4)
-#   pred.mlpML <- relevel(pred.mlpML, ref = "D")
-# 
-#   tblmlpML <- table(Predicted = pred.mlpML, Actual = actual)
-#   mlpML.cm <- confusionMatrix(tblmlpML, positive = "D")
-# 
-#   # print("Fitting avNNet")
-#   # set.seed(1510)
-#   # # Sparse partial least squares
-#   # fit.avNNet <- classify(data = data.trainS4, method = "avNNet",
-#   #                       preProcessing = "deseq-vst", ref = "D", tuneLength = tL,
-#   #                       control = nnetControl)
-#   #
-#   # #Predicted class labels
-#   # pred.avNNet <- predict(fit.avNNet, data.testS4)
-#   # pred.avNNet <- relevel(pred.avNNet, ref = "D")
-#   #
-#   # tblavNNet <- table(Predicted = pred.avNNet, Actual = actual)
-#   # avNNet.cm <- confusionMatrix(tblavNNet, positive = "D")
-#   avNNet.cm = 1
-# 
-#   print("Successfully accomplished NNet-based methods")
-#
-#   # Computation time
-#   end.time <- Sys.time()
-#   time.taken <- round(end.time - start.time,2)
-#   print(paste0("Accomplished in ", time.taken, "secs"))
-#
-#   return(list(nnet.cm, mlp.cm, mlpML.cm, avNNet.cm))
-# 
-# }
-
-
 #' @description Performs tree-based rpart classifier
 #' @param data.trainS4
 #' @param data.testS4
@@ -1234,9 +1147,17 @@ pls.spls <- function(data.trainS4, data.testS4, classts,
 
 
 seed=123
+#' @description
+#' Function to perform classification prediction non-CV
+#' @param seed seed to inizialize analysis
+#' @param mincorr correlation threshold to filter genes
+#' @param pathdf relative path to count table
+#' @param pathclin relative path to desc table
+#' @param method list of methods to use for the analysis
 crossVal.1layer <- function(seed, i, mincorr = 0.4, 
                             pathdf = "../Data/ACC_Adrenocortical_Carcinoma/ACC_Count.csv",
-                            pathclin = "../Data/ACC_Adrenocortical_Carcinoma/ACC_Pheno.csv"){
+                            pathclin = "../Data/ACC_Adrenocortical_Carcinoma/ACC_Pheno.csv",
+                            methods = c("all")){
   
   print("Importing specified datasets")
   dfsImport <- dfs.import(pathdf = pathdf, pathclin = pathclin)
@@ -1259,155 +1180,197 @@ crossVal.1layer <- function(seed, i, mincorr = 0.4,
   
   print("Starting classification tasks")
   ## Start running Classifiers
-  svmR <- svm.Radial(data.trainS4, data.testS4, classts)
-  svmRadial <- svmR[[1]]
-  genes_svmRadial_SVMBased <- svmR[[2]]
   
-  svmP <- svm.Poly(data.trainS4, data.testS4, classts)
-  svmPoly <- svmP[[1]]
-  genes_svmPoly_SVMBased <- svmP[[2]]
+  if ("svmRadial" %in% methods | "svmBased" %in% methods | "all" %in% methods){ 
+    svmR <- svm.Radial(data.trainS4, data.testS4, classts)
+    svmRadial <- svmR[[1]]
+    genes_svmRadial_SVMBased <- svmR[[2]]
+  }
   
-  svmL <- svm.Linear(data.trainS4, data.testS4, classts)
-  svmLinear <- svmL[[1]]
-  genes_svmLinear_SVMBased <- svmL[[2]]
+  if ("svmPoly" %in% methods | "svmBased" %in% methods | "all" %in% methods){
+    svmP <- svm.Poly(data.trainS4, data.testS4, classts)
+    svmPoly <- svmP[[1]]
+    genes_svmPoly_SVMBased <- svmP[[2]]
+  }
   
-  vDLDA <- voom.DLDA(data.trainS4, data.testS4, classts)
-  voomDLDA <- vDLDA[[1]]
-  genes_voomDLDA_voomBased <- vDLDA[[2]]
+  if ("svmLinear" %in% methods | "svmBased" %in% methods | "all" %in% methods){
+    svmL <- svm.Linear(data.trainS4, data.testS4, classts)
+    svmLinear <- svmL[[1]]
+    genes_svmLinear_SVMBased <- svmL[[2]]
+  }
   
-  vDQDA <- voom.DQDA(data.trainS4, data.testS4, classts)
-  voomDQDA <- vDQDA[[1]]
-  genes_voomDQDA_voomBased <- vDQDA[[2]]
+  if ("voomDLDA" %in% methods | "voomBased" %in% methods | "all" %in% methods){
+    vDLDA <- voom.DLDA(data.trainS4, data.testS4, classts)
+    voomDLDA <- vDLDA[[1]]
+    genes_voomDLDA_voomBased <- vDLDA[[2]]
+  }
   
-  vNSC <- voom.NSC(data.trainS4, data.testS4, classts)
-  voomNSC <- vNSC[[1]]
-  genes_voomNSC_voomBased <- vNSC[[2]]
+  if ("voomDQDA" %in% methods | "voomBased" %in% methods | "all" %in% methods){
+    vDQDA <- voom.DQDA(data.trainS4, data.testS4, classts)
+    voomDQDA <- vDQDA[[1]]
+    genes_voomDQDA_voomBased <- vDQDA[[2]]
+  }
   
-  linPLDA <- lin.PLDA(data.trainS4, data.testS4, classts)
-  PLDA <- linPLDA[[1]]
-  genes_PLDA_LDABased <- linPLDA[[2]]
+  if ("voomNSC" %in% methods | "voomBased" %in% methods | "all" %in% methods){
+    vNSC <- voom.NSC(data.trainS4, data.testS4, classts)
+    voomNSC <- vNSC[[1]]
+    genes_voomNSC_voomBased <- vNSC[[2]]
+  }
   
-  linPLDA2 <- lin.PLDA2(data.trainS4, data.testS4, classts)
-  PLDA2 <- linPLDA2[[1]]
-  genes_PLDA2_LDABased <- linPLDA2[[2]]
+  if ("PLDA" %in% methods | "LDABased" %in% methods | "all" %in% methods){
+    linPLDA <- lin.PLDA(data.trainS4, data.testS4, classts)
+    PLDA <- linPLDA[[1]]
+    genes_PLDA_LDABased <- linPLDA[[2]]
+  }
+  
+  if ("PLDA2" %in% methods | "LDABased" %in% methods | "all" %in% methods){
+    linPLDA2 <- lin.PLDA2(data.trainS4, data.testS4, classts)
+    PLDA2 <- linPLDA2[[1]]
+    genes_PLDA2_LDABased <- linPLDA2[[2]]
+  }
 
-  sparse <- sparse.LDA(data.trainS4, data.testS4, classts) # <-- too slow!!
-  sparseLDA <- sparse[[1]]
-  genes_sparseLDA_LDABased <- sparse[[2]]
-  
-  # net <- nnet.based(data.trainS4, data.testS4, classts) # <-- not properly working!!
-  # #nnet <- net[[1]]
-  # mlp <- net[[2]]
-  # mlpML <- net[[3]]
-  # #avNNet <- net[[4]]
-  
-  treerpart <- tree.rpart(data.trainS4, data.testS4, classts)
-  rpart <- treerpart[[1]]
-  genes_rpart_treeBased <- treerpart[[2]]
-  genes_rpart_treeBased <- list(names(genes_rpart_treeBased[[1]]))
-  
-  treecforest <- tree.cforest(data.trainS4, data.testS4, classts)
-  cforest <- treecforest[[1]]
-  genes_cforest_treeBased <- treecforest[[2]]
-  
-  treectree <- tree.ctree(data.trainS4, data.testS4, classts)
-  ctree <- treectree[[1]]
-  genes_ctree_treeBased <- treectree[[2]]
-  
-  treerf <- tree.rf(data.trainS4, data.testS4, classts)
-  rf <- treerf[[1]]
-  genes_rf_treeBased <- treerf[[2]]
-  
-  bagAda <- bagg.AdaBag(data.trainS4, data.testS4, classts)
-  AdaBag <- bagAda[[1]]
-  genes_AdaBag_baggedBased <- bagAda[[2]]
-  genes_AdaBag_baggedBased <- list(names(genes_AdaBag_baggedBased[[1]][genes_AdaBag_baggedBased[[1]]>0]))
-  
-  bagtree <- bagg.treebag(data.trainS4, data.testS4, classts)
-  treebag <- bagtree[[1]]
-  genes_treebag_baggedBased <- bagtree[[2]]
-  
-  baggfda <- bagg.bagFDA(data.trainS4, data.testS4, classts)
-  bagFDA <- baggfda[[1]]
+  if ("sparseLDA" %in% methods | "LDABased" %in% methods | "all" %in% methods){
+    sparse <- sparse.LDA(data.trainS4, data.testS4, classts) # <-- too slow!!
+    sparseLDA <- sparse[[1]]
+    genes_sparseLDA_LDABased <- sparse[[2]]
+  }
 
-  bstgam <- boost.gamboost(data.trainS4, data.testS4, classts)
-  gamboost <- bstgam[[1]]
-  genes_gamboost_boostBased <- bstgam[[2]]
-  genes_gamboost_boostBased[[1]] <- sub("bbs\\(([^,]+),.*", "\\1", genes_gamboost_boostBased[[1]])
+  if ("rpart" %in% methods | "treeBased" %in% methods | "all" %in% methods){
+    treerpart <- tree.rpart(data.trainS4, data.testS4, classts)
+    rpart <- treerpart[[1]]
+    genes_rpart_treeBased <- treerpart[[2]]
+    genes_rpart_treeBased <- list(names(genes_rpart_treeBased[[1]]))
+  }
   
-  bstbstsm <- boost.bstSm(data.trainS4, data.testS4, classts)
-  bstSm <- bstbstsm[[1]]
-  genes_bstSm_boostBased <- bstbstsm[[2]]
+  if ("cforest" %in% methods | "treeBased" %in% methods | "all" %in% methods){
+    treecforest <- tree.cforest(data.trainS4, data.testS4, classts)
+    cforest <- treecforest[[1]]
+    genes_cforest_treeBased <- treecforest[[2]]
+  }
   
-  bsttree <- boost.bstTree(data.trainS4, data.testS4, classts)
-  bstTree <- bsttree[[1]]
-  genes_bstTree_boostBased <- bsttree[[2]]
+  if ("ctree" %in% methods | "treeBased" %in% methods | "all" %in% methods){
+    treectree <- tree.ctree(data.trainS4, data.testS4, classts)
+    ctree <- treectree[[1]]
+    genes_ctree_treeBased <- treectree[[2]]
+  }
+  
+  if ("rf" %in% methods | "treeBased" %in% methods | "all" %in% methods){
+    treerf <- tree.rf(data.trainS4, data.testS4, classts)
+    RF <- treerf[[1]]
+    genes_rf_treeBased <- treerf[[2]]
+  }
+  
+  if ("AdaBag" %in% methods | "baggedBased" %in% methods | "all" %in% methods){
+    bagAda <- bagg.AdaBag(data.trainS4, data.testS4, classts)
+    AdaBag <- bagAda[[1]]
+    genes_AdaBag_baggedBased <- bagAda[[2]]
+    genes_AdaBag_baggedBased <- list(names(genes_AdaBag_baggedBased[[1]][genes_AdaBag_baggedBased[[1]]>0]))
+  }
+  
+  if ("treebag" %in% methods | "baggedBased" %in% methods | "all" %in% methods){
+    bagtree <- bagg.treebag(data.trainS4, data.testS4, classts)
+    treebag <- bagtree[[1]]
+    genes_treebag_baggedBased <- bagtree[[2]]
+  }
+  
+  if ("bagFDA" %in% methods | "baggedBased" %in% methods | "all" %in% methods){
+    baggfda <- bagg.bagFDA(data.trainS4, data.testS4, classts)
+    BagFDA <- baggfda[[1]]
+  }
+
+  if ("gamboost" %in% methods | "boostBased" %in% methods | "all" %in% methods){
+    bstgam <- boost.gamboost(data.trainS4, data.testS4, classts)
+    gamboost <- bstgam[[1]]
+    genes_gamboost_boostBased <- bstgam[[2]]
+    genes_gamboost_boostBased[[1]] <- sub("bbs\\(([^,]+),.*", "\\1", genes_gamboost_boostBased[[1]])
+  }
+  
+  if ("bstSm" %in% methods | "boostBased" %in% methods | "all" %in% methods){
+    bstbstsm <- boost.bstSm(data.trainS4, data.testS4, classts)
+    bstSm <- bstbstsm[[1]]
+    genes_bstSm_boostBased <- bstbstsm[[2]]
+  }
+  
+  if ("bstTree" %in% methods | "boostBased" %in% methods | "all" %in% methods){
+    bsttree <- boost.bstTree(data.trainS4, data.testS4, classts)
+    bstTree <- bsttree[[1]]
+    genes_bstTree_boostBased <- bsttree[[2]]
+  }
  
-  plsgpls <- pls.gpls(data.trainS4, data.testS4, classts)
-  gpls <- plsgpls[[1]]
-  genes_gpls_plsBased <- plsgpls[[2]]
+  if ("gpls" %in% methods | "plsBased" %in% methods | "all" %in% methods){
+    plsgpls <- pls.gpls(data.trainS4, data.testS4, classts)
+    gpls <- plsgpls[[1]]
+    genes_gpls_plsBased <- plsgpls[[2]]
+  }
   
-  plspls <- pls.pls(data.trainS4, data.testS4, classts)
-  pls <- plspls[[1]]
-  genes_pls_plsBased <- plspls[[2]]
+  if ("pls" %in% methods | "plsBased" %in% methods | "all" %in% methods){
+    plspls <- pls.pls(data.trainS4, data.testS4, classts)
+    pls <- plspls[[1]]
+    genes_pls_plsBased <- plspls[[2]]
+  }
   
-  plsspls <- pls.spls(data.trainS4, data.testS4, classts)
-  spls <- plsspls[[1]]
-  genes_spls_plsBased <- plsspls[[2]]
+  if ("spls" %in% methods | "plsBased" %in% methods | "all" %in% methods){
+    plsspls <- pls.spls(data.trainS4, data.testS4, classts)
+    spls <- plsspls[[1]]
+    genes_spls_plsBased <- plsspls[[2]]
+  }
+  
   
   # Build Performance-Metrics Table
-  acc.df <- data.frame(svmRadial = c(svmRadial$overall, svmRadial$byClass), 
-                       svmPoly = c(svmPoly$overall, svmPoly$byClass), 
-                       svmLinear = c(svmLinear$overall, svmLinear$byClass),
-                       voomDLDA = c(voomDLDA$overall, voomDLDA$byClass),
-                       voomDQDA = c(voomDQDA$overall, voomDQDA$byClass),
-                       voomNSC = c(voomNSC$overall, voomNSC$byClass),
-                       PLDA = c(PLDA$overall, PLDA$byClass),
-                       PLDA2 = c(PLDA2$overall, PLDA2$byClass),
-                       sparseLDA = c(sparseLDA$overall, sparseLDA$byClass),
-                       # nnet = c(nnet$overall, nnet$byClass),
-                       # mlp = c(mlp$overall, mlp$byClass),
-                       # mlpML = c(mlpML$overall, mlpML$byClass),
-                       # avNNet = c(avNNet$overall, avNNet$byClass),
-                       rpart = c(rpart$overall, rpart$byClass),
-                       cforest = c(cforest$overall, cforest$byClass),
-                       ctree = c(ctree$overall, ctree$byClass),
-                       rf = c(rf$overall, rf$byClass),
-                       AdaBag = c(AdaBag$overall, AdaBag$byClass),
-                       treebag = c(treebag$overall, treebag$byClass),
-                       bagFDA = c(bagFDA$overall, bagFDA$byClass),
-                       gamboost = c(gamboost$overall, gamboost$byClass),
-                       bstSm = c(bstSm$overall, bstSm$byClass),
-                       bstTree = c(bstTree$overall, bstTree$byClass),
-                       gpls = c(gpls$overall, gpls$byClass),
-                       pls = c(pls$overall, pls$byClass),
-                       spls = c(spls$overall, spls$byClass))
+  acc.df <- data.frame(
+    svmRadial = if (exists("svmRadial")) c(svmRadial$overall, svmRadial$byClass) else NA,
+    svmPoly = if (exists("svmPoly")) c(svmPoly$overall, svmPoly$byClass) else NA,
+    svmLinear = if (exists("svmLinear")) c(svmLinear$overall, svmLinear$byClass) else NA,
+    voomDLDA = if (exists("voomDLDA")) c(voomDLDA$overall, voomDLDA$byClass) else NA,
+    voomDQDA = if (exists("voomDQDA")) c(voomDQDA$overall, voomDQDA$byClass) else NA,
+    voomNSC = if (exists("voomNSC")) c(voomNSC$overall, voomNSC$byClass) else NA,
+    PLDA = if (exists("PLDA")) c(PLDA$overall, PLDA$byClass) else NA,
+    PLDA2 = if (exists("PLDA2")) c(PLDA2$overall, PLDA2$byClass) else NA,
+    sparseLDA = if (exists("sparseLDA")) c(sparseLDA$overall, sparseLDA$byClass) else NA,
+    rpart = if (exists("rpart")) c(rpart$overall, rpart$byClass) else NA,
+    cforest = if (exists("cforest")) c(cforest$overall, cforest$byClass) else NA,
+    ctree = if (exists("ctree")) c(ctree$overall, ctree$byClass) else NA,
+    rf = if (exists("RF")) c(RF$overall, RF$byClass) else NA,
+    AdaBag = if (exists("AdaBag")) c(AdaBag$overall, AdaBag$byClass) else NA,
+    treebag = if (exists("treebag")) c(treebag$overall, treebag$byClass) else NA,
+    bagFDA = if (exists("BagFDA")) c(BagFDA$overall, BagFDA$byClass) else NA,
+    gamboost = if (exists("gamboost")) c(gamboost$overall, gamboost$byClass) else NA,
+    bstSm = if (exists("bstSm")) c(bstSm$overall, bstSm$byClass) else NA,
+    bstTree = if (exists("bstTree")) c(bstTree$overall, bstTree$byClass) else NA,
+    gpls = if (exists("gpls")) c(gpls$overall, gpls$byClass) else NA,
+    pls = if (exists("pls")) c(pls$overall, pls$byClass) else NA,
+    spls = if (exists("spls")) c(spls$overall, spls$byClass) else NA
+  )
   
   # Save Metrics-Performance Table
   write.csv2(t(acc.df), paste0("../Results/provaAccuracyTable_",i,".csv"))
+
   
   # Build Selected genes list of list
-  list_genes <- list(genes_svmRadial_SVMBased = genes_svmRadial_SVMBased[[1]],
-                     genes_svmPoly_SVMBased = genes_svmPoly_SVMBased[[1]],
-                     genes_svmLinear_SVMBased = genes_svmLinear_SVMBased[[1]],
-                     genes_voomDLDA_voomBased = genes_voomDLDA_voomBased[[1]],
-                     genes_voomDQDA_voomBased = genes_voomDQDA_voomBased[[1]],
-                     genes_voomNSC_voomBased = genes_voomNSC_voomBased[[1]],
-                     genes_PLDA_LDABased = genes_PLDA_LDABased[[1]],
-                     genes_PLDA2_LDABased = genes_PLDA2_LDABased[[1]],
-                     genes_sparseLDA_LDABased = genes_sparseLDA_LDABased[[1]],
-                     genes_rpart_treeBased = genes_rpart_treeBased[[1]],
-                     genes_cforest_treeBased = genes_cforest_treeBased[[1]],
-                     genes_ctree_treeBased = genes_ctree_treeBased[[1]],
-                     genes_rf_treeBased = genes_rf_treeBased[[1]],
-                     genes_AdaBag_baggedBased = genes_AdaBag_baggedBased[[1]],
-                     genes_treebag_baggedBased = genes_treebag_baggedBased[[1]],
-                     genes_gamboost_boostBased = genes_gamboost_boostBased[[1]],
-                     genes_bstSm_boostBased = genes_bstSm_boostBased[[1]],
-                     genes_bstTree_boostBased = genes_bstTree_boostBased[[1]],
-                     genes_gpls_plsBased = genes_gpls_plsBased[[1]],
-                     genes_pls_plsBased = genes_pls_plsBased[[1]],
-                     genes_spls_plsBased = genes_spls_plsBased[[1]])
+  list_genes <- list(
+    genes_svmRadial_SVMBased = if (exists("genes_svmRadial_SVMBased")) genes_svmRadial_SVMBased[[1]] else NA,
+    genes_svmPoly_SVMBased = if (exists("genes_svmPoly_SVMBased")) genes_svmPoly_SVMBased[[1]] else NA,
+    genes_svmLinear_SVMBased = if (exists("genes_svmLinear_SVMBased")) genes_svmLinear_SVMBased[[1]] else NA,
+    genes_voomDLDA_voomBased = if (exists("genes_voomDLDA_voomBased")) genes_voomDLDA_voomBased[[1]] else NA,
+    genes_voomDQDA_voomBased = if (exists("genes_voomDQDA_voomBased")) genes_voomDQDA_voomBased[[1]] else NA,
+    genes_voomNSC_voomBased = if (exists("genes_voomNSC_voomBased")) genes_voomNSC_voomBased[[1]] else NA,
+    genes_PLDA_LDABased = if (exists("genes_PLDA_LDABased")) genes_PLDA_LDABased[[1]] else NA,
+    genes_PLDA2_LDABased = if (exists("genes_PLDA2_LDABased")) genes_PLDA2_LDABased[[1]] else NA,
+    genes_sparseLDA_LDABased = if (exists("genes_sparseLDA_LDABased")) genes_sparseLDA_LDABased[[1]] else NA,
+    genes_rpart_treeBased = if (exists("genes_rpart_treeBased")) genes_rpart_treeBased[[1]] else NA,
+    genes_cforest_treeBased = if (exists("genes_cforest_treeBased")) genes_cforest_treeBased[[1]] else NA,
+    genes_ctree_treeBased = if (exists("genes_ctree_treeBased")) genes_ctree_treeBased[[1]] else NA,
+    genes_rf_treeBased = if (exists("genes_rf_treeBased")) genes_rf_treeBased[[1]] else NA,
+    genes_AdaBag_baggedBased = if (exists("genes_AdaBag_baggedBased")) genes_AdaBag_baggedBased[[1]] else NA,
+    genes_treebag_baggedBased = if (exists("genes_treebag_baggedBased")) genes_treebag_baggedBased[[1]] else NA,
+    genes_gamboost_boostBased = if (exists("genes_gamboost_boostBased")) genes_gamboost_boostBased[[1]] else NA,
+    genes_bstSm_boostBased = if (exists("genes_bstSm_boostBased")) genes_bstSm_boostBased[[1]] else NA,
+    genes_bstTree_boostBased = if (exists("genes_bstTree_boostBased")) genes_bstTree_boostBased[[1]] else NA,
+    genes_gpls_plsBased = if (exists("genes_gpls_plsBased")) genes_gpls_plsBased[[1]] else NA,
+    genes_pls_plsBased = if (exists("genes_pls_plsBased")) genes_pls_plsBased[[1]] else NA,
+    genes_spls_plsBased = if (exists("genes_spls_plsBased")) genes_spls_plsBased[[1]] else NA
+  )
+  
   
   # Save list of list of genes as RDS object
   saveRDS(list_genes, paste0("../Results/provalist_genes_",i,".rds"))
@@ -1415,14 +1378,51 @@ crossVal.1layer <- function(seed, i, mincorr = 0.4,
   return(list(acc.df, list_genes))
 }
 
-i = 1
-cv <- 10
-for (i in c(1:cv)) {
+#' @description
+#' Function to perform n-fold CV classification prediction
+#' @param seed seed to inizialize analysis
+#' @param mincorr correlation threshold to filter genes
+#' @param pathdf relative path to count table
+#' @param pathclin relative path to desc table
+#' @param method list of methods to use for the analysis
+#' @param cv number of cross validation to perform
+ensembleBP <- function(mincorr = 0.4, cv = 10, 
+                       pathdf = "../Data/ACC_Adrenocortical_Carcinoma/ACC_Count.csv",
+                       pathclin = "../Data/ACC_Adrenocortical_Carcinoma/ACC_Pheno.csv",
+                       methods = c("all")){
   
-  print(paste0("Performing Cross-Validation of ",i," layer"))
-  crossVal.1layer(seed = i, i = i, mincorr = 0.42)
+  for (i in c(1:cv)) {
+    
+    print(paste0("Performing Cross-Validation of ",i," layer"))
+    crossVal.1layer(seed = i, i = i, mincorr = mincorr, 
+                    pathdf = pathdf,
+                    pathclin = pathclin,
+                    methods = methods)
+    
+  }
+  
   
 }
 
-a <- readRDS(file = "../Results/provalist_genes_1.rds")
+
+
+
+## EXAMPLE USAGE:
+
+ensembleBP(methods = c("svmBased", "plsBased"))
+
+a <- readRDS("../Results/provalist_genes_1.rds")
+b <- readRDS("../Results/provalist_genes_2.rds")
+
+
+
+
+
+
+
+
+
+
+
+
 

@@ -1,3 +1,5 @@
+
+
 #' @description
 #' This function takes as input a list containing a list of genes,
 #' one for each Classifier used, and a threshold value indicating the
@@ -7,8 +9,10 @@
 #' @param n_min threshold number indicating the minimum number of algorithms 
 #' in which each gene should be contemporary important
 #' @returns consensus.list <- list of genes found by consensus 
-getConsensus.list <- function(lista_geni, n_min = 5) {
+getConsensus.list <- function(lista_geni = readRDS(file = "../Results/list_genes_1.rds"), 
+                              n_min = 7) {
 
+  setwd("/Users/giorgiomontesi/Desktop/Universita_di_Siena/A_PhD_Project/Biomarker_Prediction/ensembleBP/Codes")
   library(tidyverse)
   
   # Get all unique genes from all algorithms
@@ -31,11 +35,16 @@ getConsensus.list <- function(lista_geni, n_min = 5) {
   ds <- df[rowSums(df) > (n_min - 1), ]
   consensus.list <- list(consensusGenes = rownames(ds))
   
+  print(consensus.list)
   return(consensus.list)
+  # Aggiungi questa riga alla fine della funzione getConsensus.list per restituire l'output in formato JSON
+  cat(jsonlite::toJSON(consensus.list))
+  #return(jsonlite::toJSON(consensus.list))
   
 }
 
 # # Example usage function:
-# consensus.geneList <- getConsensus.list(lista_geni = 
-#                                           readRDS(file = "../Results/list_genes_1.rds"), 
+# consensus.geneList <- getConsensus.list(lista_geni =
+#                                           readRDS(file = "../Results/list_genes_1.rds"),
 #                                         n_min = 7)
+consensus.geneList <- getConsensus.list()
