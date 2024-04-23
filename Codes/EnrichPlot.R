@@ -3,7 +3,13 @@ setwd("/Users/giorgiomontesi/Desktop/Universita_di_Siena/A_PhD_Project/Biomarker
 
 a <- readRDS(file = "../Results/list_genes_1.rds")
 gene_list <- a[[2]]
+gene_list <- consensus.geneList
+ds <- read.csv2("../Data/Eboplus/gene_symbol_conversion.csv")
+gino <- gene_list
 
+m <- match(gino$consensusGenes, ds$ensembl)
+gino$consensusGenes <- ds$symbol[m]
+gene_list <- gino[[1]]
 
 library(clusterProfiler)
 library(org.Hs.eg.db)
@@ -96,10 +102,10 @@ enrich.GO <- function(gene_list, keyType = "SYMBOL", pval = 0.05,
 }
 
 
-go_grouped_signif <- enrich.GO(gene_list = gene_list, pval = 0.01)
-go_grouped <- enrich.GO(gene_list = gene_list, pval = 0.01, signif = F)
-go_results <- enrich.GO(gene_list = gene_list, pval = 0.01, signif = F, groupGO = F)
-go_signif <- enrich.GO(gene_list = gene_list, pval = 0.01, signif = T, groupGO = F)
+go_grouped_signif <- enrich.GO(gene_list = gene_list, pval = 0.05, keyType = "SYMBOL")
+go_grouped <- enrich.GO(gene_list = gene_list, pval = 0.05, signif = F)
+go_results <- enrich.GO(gene_list = gene_list, pval = 0.05, signif = F, groupGO = F)
+go_signif <- enrich.GO(gene_list = gene_list, pval = 0.05, signif = T, groupGO = F)
 
 
 

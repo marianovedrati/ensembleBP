@@ -14,8 +14,8 @@ library(feseR)
 
 
 #' @description Import dfCount and dfPheno given their paths
-#' @param pathdf relative path to dfCount
-#' @param pathclin relative path to dfPheno
+#' @param pathdf relative path to dfCount. genes on rows, samples on columns
+#' @param pathclin relative path to dfPheno 2 columns should be named ID and class
 #' @returns df: dfCount with samples on cols and genes on rows
 #' @returns class: S4 DF dfPheno matched to df with only one col of response variable named condition 
 dfs.import <- function(pathdf = "../Data/ACC_Adrenocortical_Carcinoma/ACC_Count.csv",
@@ -27,16 +27,18 @@ dfs.import <- function(pathdf = "../Data/ACC_Adrenocortical_Carcinoma/ACC_Count.
   
   df <- as.data.frame(t(df))
   # Select from df_pheno the only col we are interested in:
-  df_pheno <- df_pheno[,c(1,9)]
+  df_pheno <- df_pheno[ ,c("ID", "class")]
+  rownames(df_pheno) <- df_pheno$ID
   # transform alive status into factor
   # L: alive
   # D: dead
   # match df_count and df_pheno
   m <- match(colnames(df), rownames(df_pheno))
   df_pheno <- df_pheno[m, ]
+  df_pheno$class <- as.factor(df_pheno$class)
   
-  df_pheno$patient.vital_status <- as.factor(ifelse(df_pheno$patient.vital_status == "alive", "L", "D"))
-  df_pheno <- DataFrame(condition = df_pheno$patient.vital_status)
+  df_pheno$class <- as.factor(ifelse(df_pheno$class == 1, "L", "D"))
+  df_pheno <- DataFrame(condition = df_pheno$class)
   class <- df_pheno
   
   return(list(df, class))
@@ -1154,14 +1156,14 @@ seed=123
 #' @param pathdf relative path to count table
 #' @param pathclin relative path to desc table
 #' @param method list of methods to use for the analysis
-crossVal.1layer <- function(seed, i, mincorr = 0.4, 
+crossVal.1layer <- function(seed, i, mincorr = 0.39, 
                             pathdf = "../Data/ACC_Adrenocortical_Carcinoma/ACC_Count.csv",
                             pathclin = "../Data/ACC_Adrenocortical_Carcinoma/ACC_Pheno.csv",
                             methods = c("all")){
   
   print("Importing specified datasets")
   dfsImport <- dfs.import(pathdf = pathdf, pathclin = pathclin)
-  df <- dfsImport[[1]]
+  df <- as.data.frame(t(dfsImport[[1]]))
   class <- dfsImport[[2]]
   
   print("Performing mini features trimming")
@@ -1343,7 +1345,7 @@ crossVal.1layer <- function(seed, i, mincorr = 0.4,
   )
   
   # Save Metrics-Performance Table
-  write.csv2(t(acc.df), paste0("../Results/provaAccuracyTable_",i,".csv"))
+  write.csv2(t(acc.df), paste0("../Results/eboplusAccuracyTable_",i,".csv"))
 
   
   # Build Selected genes list of list
@@ -1373,7 +1375,7 @@ crossVal.1layer <- function(seed, i, mincorr = 0.4,
   
   
   # Save list of list of genes as RDS object
-  saveRDS(list_genes, paste0("../Results/provalist_genes_",i,".rds"))
+  saveRDS(list_genes, paste0("../Results/ebopluslist_genes_",i,".rds"))
   
   return(list(acc.df, list_genes))
 }
@@ -1391,10 +1393,12 @@ ensembleBP <- function(mincorr = 0.4, cv = 10,
                        pathclin = "../Data/ACC_Adrenocortical_Carcinoma/ACC_Pheno.csv",
                        methods = c("all")){
   
+  
+  
   for (i in c(1:cv)) {
     
     print(paste0("Performing Cross-Validation of ",i," layer"))
-    crossVal.1layer(seed = i, i = i, mincorr = mincorr, 
+    crossVal.1layer(seed = i+5, i = i, mincorr = mincorr, 
                     pathdf = pathdf,
                     pathclin = pathclin,
                     methods = methods)
@@ -1409,14 +1413,14 @@ ensembleBP <- function(mincorr = 0.4, cv = 10,
 
 ## EXAMPLE USAGE:
 
-ensembleBP(methods = c("svmBased", "plsBased"))
+ensembleBP(mincorr = 0.4, cv = 5, 
+           pathdf = "../Data/Eboplus/count.day1.csv",
+           pathclin = "../Data/Eboplus/desc_ab_class.csv",
+           methods = c("svmBased", "plsBased", "rpart",
+                       "voomBased", "rf"))
 
 a <- readRDS("../Results/provalist_genes_1.rds")
 b <- readRDS("../Results/provalist_genes_2.rds")
-
-
-
-
 
 
 

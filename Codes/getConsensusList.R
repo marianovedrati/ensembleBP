@@ -44,7 +44,7 @@ getConsensus.list <- function(lista_geni = readRDS(file = "../Results/list_genes
 }
 
 # # Example usage function:
-# consensus.geneList <- getConsensus.list(lista_geni =
-#                                           readRDS(file = "../Results/list_genes_1.rds"),
-#                                         n_min = 7)
-consensus.geneList <- getConsensus.list()
+consensus.geneList <- getConsensus.list(lista_geni =
+                                          readRDS(file = "../Results/ebopluslist_genes_1.rds"),
+                                        n_min = 3)
+# consensus.geneList <- getConsensus.list()
